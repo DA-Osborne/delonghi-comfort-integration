@@ -128,7 +128,7 @@ class DeLonghiSwitch(CoordinatorEntity, SwitchEntity):
         if self.entity_description.key == "get_device_status":
             success = await self.coordinator.api.set_device_status(self.coordinator.dsn, 2)
         elif self.entity_description.key == "get_silent_function":
-            success = await self.coordinator.api.set_silent_mode(self.coordinator.dsn, 2)
+            success = await self.coordinator.api.set_silent_mode(self.coordinator.dsn, 0)
 
         if success:
             await self.coordinator.async_request_refresh()

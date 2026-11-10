@@ -424,7 +424,7 @@ class DeLonghiAPI:
             return False
 
     async def set_silent_mode(self, dsn: str, status: int) -> bool:
-        """Set silent mode (1=ON, 2=OFF)."""
+        """Set silent mode (1=ON, 0=OFF)."""
         try:
             response = await self._post_request(
                 f"apiv1/dsns/{dsn}/properties/set_silent_function/datapoints.json",
