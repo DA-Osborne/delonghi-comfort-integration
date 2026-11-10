@@ -115,11 +115,15 @@ class DeLonghiSwitch(CoordinatorEntity, SwitchEntity):
         """Turn the switch on."""
         if self.entity_description.key == "get_device_status":
             success = await self.coordinator.api.set_device_status(self.coordinator.dsn, 1)
+            optimistic_value = 1
         elif self.entity_description.key == "get_silent_function":
             success = await self.coordinator.api.set_silent_mode(self.coordinator.dsn, 1)
+            optimistic_value = 1
 
         if success:
-            await self.coordinator.async_request_refresh()
+            self.coordinator.set_optimistic_value(
+                self.entity_description.key, optimistic_value
+            )
         else:
             _LOGGER.error("Failed to change %s to 1", self.entity_description.key)
 
@@ -127,17 +131,28 @@ class DeLonghiSwitch(CoordinatorEntity, SwitchEntity):
         """Turn the switch off."""
         if self.entity_description.key == "get_device_status":
             success = await self.coordinator.api.set_device_status(self.coordinator.dsn, 2)
+            optimistic_value = 2
         elif self.entity_description.key == "get_silent_function":
             success = await self.coordinator.api.set_silent_mode(self.coordinator.dsn, 0)
+            optimistic_value = 0
 
         if success:
-            await self.coordinator.async_request_refresh()
+            self.coordinator.set_optimistic_value(
+                self.entity_description.key, optimistic_value
+            )
         else:
             _LOGGER.error("Failed to turn off %s", self.entity_description.key)
 
     @property
     def available(self) -> bool:
         """Return if entity is available."""
+        if self.entity_description.key == "get_silent_function":
+            return (
+                super().available
+                and self.entity_description.key in self.coordinator.data
+                and self.coordinator.data.get("get_device_status") == 1
+                and not self.coordinator.is_property_pending("get_device_status")
+            )
         return (
             super().available and self.entity_description.key in self.coordinator.data
         )

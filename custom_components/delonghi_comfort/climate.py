@@ -178,7 +178,7 @@ class DeLonghiClimate(CoordinatorEntity, ClimateEntity):
         if hvac_mode == HVACMode.OFF:
             # Turn off the device
             if await self._api.set_device_status(self._dsn, 2):  # 2 = OFF
-                await self.coordinator.async_request_refresh()
+                self.coordinator.set_optimistic_value("get_device_status", 2)
             else:
                 _LOGGER.error("Failed to turn off device")
         else:
@@ -188,11 +188,12 @@ class DeLonghiClimate(CoordinatorEntity, ClimateEntity):
                 if not await self._api.set_device_status(self._dsn, 1):  # 1 = ON
                     _LOGGER.error("Failed to turn on device")
                     return
+                self.coordinator.set_optimistic_value("get_device_status", 1)
 
             # Set the mode
             device_mode = HVAC_MODE_TO_DEVICE.get(hvac_mode)
             if device_mode and await self._api.set_device_mode(self._dsn, device_mode):
-                await self.coordinator.async_request_refresh()
+                self.coordinator.set_optimistic_value("get_device_mode", device_mode)
             else:
                 _LOGGER.error("Failed to set HVAC mode")
 
@@ -215,14 +216,14 @@ class DeLonghiClimate(CoordinatorEntity, ClimateEntity):
     async def async_turn_on(self) -> None:
         """Turn the entity on."""
         if await self._api.set_device_status(self._dsn, 1):  # 1 = ON
-            await self.coordinator.async_request_refresh()
+            self.coordinator.set_optimistic_value("get_device_status", 1)
         else:
             _LOGGER.error("Failed to turn on device")
 
     async def async_turn_off(self) -> None:
         """Turn the entity off."""
         if await self._api.set_device_status(self._dsn, 2):  # 2 = OFF
-            await self.coordinator.async_request_refresh()
+            self.coordinator.set_optimistic_value("get_device_status", 2)
         else:
             _LOGGER.error("Failed to turn off device")
 
