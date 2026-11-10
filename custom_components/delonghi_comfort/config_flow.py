@@ -13,6 +13,9 @@ from .const import (
     LANGUAGES,
     DEFAULT_LANGUAGE,
     CONF_SCAN_INTERVAL,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+    SCAN_INTERVAL,
 )
 from .api import DeLonghiAPI, DeLonghiAuthenticationError
 
@@ -150,14 +153,19 @@ class DelonghiComfortOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
 
+        scan_interval = self.config_entry.options.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL)
+        scan_interval = min(max(scan_interval, MIN_SCAN_INTERVAL), MAX_SCAN_INTERVAL)
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
                 {
                     vol.Optional(
                         CONF_SCAN_INTERVAL,
-                        default=self.config_entry.options.get(CONF_SCAN_INTERVAL, 15),
-                    ): vol.All(vol.Coerce(int), vol.Range(min=5, max=300)),
+                        default=scan_interval,
+                    ): vol.All(
+                        vol.Coerce(int),
+                        vol.Range(min=MIN_SCAN_INTERVAL, max=MAX_SCAN_INTERVAL),
+                    ),
                 }
             ),
         )

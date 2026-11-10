@@ -10,7 +10,13 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import DeLonghiAPI, DeLonghiAuthenticationError
-from .const import SCAN_INTERVAL, CONF_SCAN_INTERVAL, DOMAIN
+from .const import (
+    CONF_SCAN_INTERVAL,
+    DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+    SCAN_INTERVAL,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,6 +35,7 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Initialize the coordinator."""
         # Get scan interval from options, fallback to default
         scan_interval = config_entry.options.get(CONF_SCAN_INTERVAL, SCAN_INTERVAL)
+        scan_interval = min(max(scan_interval, MIN_SCAN_INTERVAL), MAX_SCAN_INTERVAL)
 
         super().__init__(
             hass,

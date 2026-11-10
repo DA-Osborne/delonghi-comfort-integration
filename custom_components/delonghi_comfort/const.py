@@ -259,4 +259,6 @@ DEFAULT_DEVICE_MODE = 1  # Cooling mode
 DEFAULT_LANGUAGE = "en"
 
 # Update intervals
-SCAN_INTERVAL = 5  # seconds
+SCAN_INTERVAL = 60  # seconds
+MIN_SCAN_INTERVAL = 30
+MAX_SCAN_INTERVAL = 300
