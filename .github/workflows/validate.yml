@@ -47,6 +47,9 @@ jobs:
     - name: Check Python syntax
       run: |
         python -m py_compile custom_components/delonghi_comfort/*.py
+
+    - name: Run API unit tests
+      run: python -m unittest discover -s tests -v
         
     - name: Validate HACS compatibility
       run: |
