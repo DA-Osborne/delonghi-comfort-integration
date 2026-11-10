@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 import urllib.parse
 from datetime import datetime
 from typing import Any
@@ -21,6 +22,16 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _extract_consent_signature(consent_text: str) -> str | None:
+    """Extract the quoted consent signature from the consent page."""
+    match = re.search(
+        r"\b(?:const|let|var)\s+consentObj2Sig\s*=\s*(['\"])(.*?)\1",
+        consent_text,
+        flags=re.DOTALL,
+    )
+    return match.group(2) if match else None
 
 
 class DeLonghiAPI:
@@ -227,18 +238,16 @@ class DeLonghiAPI:
                 consent_content_type = response.headers.get("Content-Type", "")
                 consent_text = await response.text()
 
-            signature_marker = "const consentObj2Sig = '"
-            if signature_marker not in consent_text:
+            signature = _extract_consent_signature(consent_text)
+            if not signature:
                 self.auth_failure = "cannot_connect"
                 _LOGGER.error(
-                    "Consent page missing expected signature (HTTP %s, content type %s, body length %s)",
+                    "Consent page signature not found (HTTP %s, content type %s, body length %s)",
                     consent_status,
                     consent_content_type,
                     len(consent_text),
                 )
                 return None
-
-            signature = consent_text.split(signature_marker, 1)[1].split("';", 1)[0]
 
             # Step 6: Authorization
             async with self.session.get(
