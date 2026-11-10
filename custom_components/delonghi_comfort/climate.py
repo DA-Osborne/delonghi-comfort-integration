@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import DeLonghiConfigEntry
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -31,18 +32,20 @@ HVAC_MODE_TO_DEVICE = {v: k for k, v in DEVICE_MODE_TO_HVAC.items()}
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: DeLonghiConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up De'Longhi climate entities."""
-    data = hass.data[DOMAIN][config_entry.entry_id]
-    coordinators = data["coordinators"]
+    coordinators = config_entry.runtime_data.coordinators
 
     entities = [
         DeLonghiClimate(coordinator=coordinator) for coordinator in coordinators
     ]
 
-    entities.extend([DeLonghiHeater(coordinator=coordinator) for coordinator in data["heater_coordinators"]])
+    entities.extend(
+        DeLonghiHeater(coordinator=coordinator)
+        for coordinator in config_entry.runtime_data.heater_coordinators
+    )
 
     async_add_entities(entities)
 

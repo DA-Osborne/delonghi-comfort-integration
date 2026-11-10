@@ -23,6 +23,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import DeLonghiConfigEntry
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -115,12 +116,11 @@ SENSOR_DESCRIPTIONS = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: DeLonghiConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up De'Longhi sensor entities."""
-    data = hass.data[DOMAIN][config_entry.entry_id]
-    coordinators = data["coordinators"]
+    coordinators = config_entry.runtime_data.coordinators
 
     entities = []
 
@@ -135,7 +135,10 @@ async def async_setup_entry(
             ]
         )
 
-    entities.extend([HeaterTemperature(coordinator=coordinator) for coordinator in data["heater_coordinators"]])
+    entities.extend(
+        HeaterTemperature(coordinator=coordinator)
+        for coordinator in config_entry.runtime_data.heater_coordinators
+    )
 
     async_add_entities(entities)
 

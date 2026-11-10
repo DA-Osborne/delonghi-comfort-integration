@@ -35,6 +35,7 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER,
             name=f"delonghi_comfort_{dsn}",
             update_interval=timedelta(seconds=scan_interval),
+            always_update=False,
         )
         self.api = api
         self.dsn = dsn

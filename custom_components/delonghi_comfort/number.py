@@ -10,12 +10,12 @@ from homeassistant.components.number import (
     NumberEntityDescription,
     NumberMode,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import DeLonghiConfigEntry
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,12 +46,11 @@ NUMBER_DESCRIPTIONS = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: DeLonghiConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up De'Longhi number entities."""
-    data = hass.data[DOMAIN][config_entry.entry_id]
-    coordinators = data["coordinators"]
+    coordinators = config_entry.runtime_data.coordinators
 
     entities = []
 

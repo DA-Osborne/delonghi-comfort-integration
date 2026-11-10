@@ -1,5 +1,10 @@
 """The De'Longhi Comfort integration."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TypeAlias
+
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
@@ -8,15 +13,26 @@ from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
-    DOMAIN,
     CONF_USERNAME,
     CONF_PASSWORD,
     CONF_LANGUAGE,
-    CONF_SCAN_INTERVAL,
     DEFAULT_LANGUAGE,
 )
 from .api import DeLonghiAPI, DeLonghiAPIError, DeLonghiAuthenticationError
 from .coordinator import DeLonghiCoordinator
+
+
+@dataclass(slots=True)
+class DeLonghiRuntimeData:
+    """Runtime objects shared by the integration platforms."""
+
+    api: DeLonghiAPI
+    coordinators: list[DeLonghiCoordinator]
+    heater_coordinators: list[DeLonghiCoordinator]
+
+
+DeLonghiConfigEntry: TypeAlias = ConfigEntry[DeLonghiRuntimeData]
+
 
 PLATFORMS: list[Platform] = [
     Platform.CLIMATE,
@@ -27,7 +43,7 @@ PLATFORMS: list[Platform] = [
 ]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: DeLonghiConfigEntry) -> bool:
     """Set up De'Longhi Comfort from a config entry."""
     username = entry.data[CONF_USERNAME]
     password = entry.data[CONF_PASSWORD]
@@ -66,14 +82,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         else:
             coordinators.append(coordinator)
 
-    # Store API instance, devices, and coordinators in hass data
-    hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {
-        "api": api,
-        "devices": devices,
-        "coordinators": coordinators,
-        "heater_coordinators": heater_coordinators,
-    }
+    entry.runtime_data = DeLonghiRuntimeData(
+        api=api,
+        coordinators=coordinators,
+        heater_coordinators=heater_coordinators,
+    )
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -86,10 +99,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Unload a config entry."""
-    if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
-        hass.data[DOMAIN].pop(entry.entry_id)
-
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:

@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
+from . import DeLonghiConfigEntry
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -25,12 +25,11 @@ SELECT_DESCRIPTIONS = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: DeLonghiConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up De'Longhi select entities."""
-    data = hass.data[DOMAIN][config_entry.entry_id]
-    coordinators = data["coordinators"]
+    coordinators = config_entry.runtime_data.coordinators
 
     entities = []
 
@@ -45,7 +44,10 @@ async def async_setup_entry(
             ]
         )
 
-    entities.extend([HeaterBrightness(coordinator=coordinator) for coordinator in data["heater_coordinators"]])
+    entities.extend(
+        HeaterBrightness(coordinator=coordinator)
+        for coordinator in config_entry.runtime_data.heater_coordinators
+    )
 
     async_add_entities(entities)
 
