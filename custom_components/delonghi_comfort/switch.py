@@ -128,12 +128,12 @@ class DeLonghiSwitch(CoordinatorEntity, SwitchEntity):
         if self.entity_description.key == "get_device_status":
             success = await self.coordinator.api.set_device_status(self.coordinator.dsn, 2)
         elif self.entity_description.key == "get_silent_function":
-            success = await self.coordinator.api.set_silent_mode(self.coordinator.dsn, 0)
+            success = await self.coordinator.api.set_silent_mode(self.coordinator.dsn, 2)
 
         if success:
             await self.coordinator.async_request_refresh()
         else:
-            _LOGGER.error("Failed to change %s to 0", self.entity_description.key)
+            _LOGGER.error("Failed to turn off %s", self.entity_description.key)
 
     @property
     def available(self) -> bool:
