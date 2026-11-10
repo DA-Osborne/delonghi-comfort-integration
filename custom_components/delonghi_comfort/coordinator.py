@@ -5,10 +5,11 @@ import logging
 from typing import Any
 
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .api import DeLonghiAPI
+from .api import DeLonghiAPI, DeLonghiAuthenticationError
 from .const import SCAN_INTERVAL, CONF_SCAN_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,6 +54,8 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     prop_info = prop["property"]
                     data[prop_info["name"]] = prop_info["value"]
 
+        except DeLonghiAuthenticationError as err:
+            raise ConfigEntryAuthFailed from err
         except Exception as err:
             raise UpdateFailed(f"Error communicating with API: {err}") from err
         else:

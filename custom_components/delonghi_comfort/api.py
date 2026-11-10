@@ -486,6 +486,10 @@ class DeLonghiAPI:
 
             headers["Authorization"] = f"auth_token {self.access_token}"
             async with self.session.get(url, headers=headers) as response:
+                if response.status == 401:
+                    raise DeLonghiAuthenticationError(
+                        "De'Longhi rejected the refreshed access token"
+                    )
                 response.raise_for_status()
                 return await response.json()
 

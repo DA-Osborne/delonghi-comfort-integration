@@ -11,6 +11,13 @@
           "password": "Password",
           "language": "Language"
         }
+      },
+      "reauth_confirm": {
+        "title": "Reauthenticate De'Longhi Comfort",
+        "description": "Enter your De'Longhi account password again.",
+        "data": {
+          "password": "Password"
+        }
       }
     },
     "error": {

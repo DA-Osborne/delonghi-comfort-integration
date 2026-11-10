@@ -1,9 +1,10 @@
 """The De'Longhi Comfort integration."""
 
-import logging
+import aiohttp
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .const import (
@@ -14,10 +15,8 @@ from .const import (
     CONF_SCAN_INTERVAL,
     DEFAULT_LANGUAGE,
 )
-from .api import DeLonghiAPI
+from .api import DeLonghiAPI, DeLonghiAPIError, DeLonghiAuthenticationError
 from .coordinator import DeLonghiCoordinator
-
-_LOGGER = logging.getLogger(__name__)
 
 PLATFORMS: list[Platform] = [
     Platform.CLIMATE,
@@ -39,14 +38,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Test authentication
     if not await api.authenticate():
-        _LOGGER.error("Failed to authenticate with De'Longhi API")
-        return False
+        if api.auth_failure == "invalid_auth":
+            raise ConfigEntryAuthFailed("De'Longhi rejected the account credentials")
+        raise ConfigEntryNotReady("Unable to authenticate with De'Longhi")
 
     # Get devices
-    devices = await api.get_devices()
+    try:
+        devices = await api.get_devices()
+    except DeLonghiAuthenticationError as err:
+        raise ConfigEntryAuthFailed from err
+    except (aiohttp.ClientError, DeLonghiAPIError, ValueError, TimeoutError) as err:
+        raise ConfigEntryNotReady from err
     if not devices:
-        _LOGGER.error("No devices found")
-        return False
+        raise ConfigEntryNotReady("No De'Longhi devices returned")
 
     # Create coordinators for each device
     coordinators = []
