@@ -54,6 +54,7 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.device_model = device_info.get("model", "Unknown")
         self.device_version = device_info.get("sw_version")
         self._config_entry = config_entry
+        self.available_properties: frozenset[str] = frozenset()
         self._pending_commands: dict[str, tuple[Any, Any, float]] = {}
         self._confirmation_task: asyncio.Task[None] | None = None
         config_entry.async_on_unload(self._cancel_confirmation_task)
@@ -69,6 +70,9 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 if "property" in prop:
                     prop_info = prop["property"]
                     data[prop_info["name"]] = prop_info["value"]
+
+            # Records the device reports, regardless of whether they hold a value.
+            self.available_properties = frozenset(data)
 
             now = monotonic()
             confirmation_changed = False

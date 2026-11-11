@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 
 from homeassistant.components.number import (
@@ -16,13 +17,22 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
+from .capabilities import async_supported_descriptions
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+@dataclass(frozen=True, kw_only=True)
+class DeLonghiNumberDescription(NumberEntityDescription):
+    """Number description with the device properties it needs."""
+
+    required_properties: tuple[str, ...]
+
+
 NUMBER_DESCRIPTIONS = (
-    NumberEntityDescription(
+    DeLonghiNumberDescription(
         key="temp_setpoint",
+        required_properties=("temp_setpoint", "set_temp_setpoint"),
         translation_key="temperature_setpoint",
         device_class=NumberDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
@@ -31,8 +41,9 @@ NUMBER_DESCRIPTIONS = (
         native_step=1,
         mode=NumberMode.BOX,
     ),
-    NumberEntityDescription(
+    DeLonghiNumberDescription(
         key="humidity_setpoint",
+        required_properties=("humidity_setpoint",),
         translation_key="humidity_setpoint",
         device_class=NumberDeviceClass.HUMIDITY,
         native_unit_of_measurement=PERCENTAGE,
@@ -61,7 +72,13 @@ async def async_setup_entry(
                     coordinator=coordinator,
                     description=description,
                 )
-                for description in NUMBER_DESCRIPTIONS
+                for description in async_supported_descriptions(
+                    hass,
+                    "number",
+                    coordinator.dsn,
+                    coordinator.available_properties,
+                    NUMBER_DESCRIPTIONS,
+                )
             ]
         )
 
@@ -72,11 +89,12 @@ class DeLonghiNumber(CoordinatorEntity, NumberEntity):
     """Representation of a De'Longhi number entity."""
 
     _attr_has_entity_name = True
+    entity_description: DeLonghiNumberDescription
 
     def __init__(
         self,
         coordinator,
-        description: NumberEntityDescription,
+        description: DeLonghiNumberDescription,
     ) -> None:
         """Initialize the number entity."""
         super().__init__(coordinator)

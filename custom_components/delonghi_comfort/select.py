@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
@@ -10,13 +11,22 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
+from .capabilities import async_supported_descriptions
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+@dataclass(frozen=True, kw_only=True)
+class DeLonghiSelectDescription(SelectEntityDescription):
+    """Select description with the device properties it needs."""
+
+    required_properties: tuple[str, ...]
+
+
 SELECT_DESCRIPTIONS = (
-    SelectEntityDescription(
+    DeLonghiSelectDescription(
         key="get_device_mode",
+        required_properties=("get_device_mode", "set_device_mode"),
         translation_key="device_mode",
         options=["cooling", "dehumidification", "fan_only"],
     ),
@@ -40,7 +50,13 @@ async def async_setup_entry(
                     coordinator=coordinator,
                     description=description,
                 )
-                for description in SELECT_DESCRIPTIONS
+                for description in async_supported_descriptions(
+                    hass,
+                    "select",
+                    coordinator.dsn,
+                    coordinator.available_properties,
+                    SELECT_DESCRIPTIONS,
+                )
             ]
         )
 
@@ -56,11 +72,12 @@ class DeLonghiSelect(CoordinatorEntity, SelectEntity):
     """Representation of a De'Longhi select entity."""
 
     _attr_has_entity_name = True
+    entity_description: DeLonghiSelectDescription
 
     def __init__(
         self,
         coordinator,
-        description: SelectEntityDescription,
+        description: DeLonghiSelectDescription,
     ) -> None:
         """Initialize the select entity."""
         super().__init__(coordinator)

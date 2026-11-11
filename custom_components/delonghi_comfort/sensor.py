@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 from typing import Any
 
@@ -14,6 +15,7 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
     UnitOfPower,
     UnitOfTemperature,
     UnitOfTime,
@@ -24,86 +26,108 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
+from .capabilities import async_supported_descriptions
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+@dataclass(frozen=True, kw_only=True)
+class DeLonghiSensorDescription(SensorEntityDescription):
+    """Sensor description with the device properties it needs."""
+
+    required_properties: tuple[str, ...]
+    data_key: str | None = None
+
+
 SENSOR_DESCRIPTIONS = (
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="room_temp",
+        required_properties=("room_temp",),
         translation_key="room_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         suggested_display_precision=1,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="temp_setpoint",
+        required_properties=("temp_setpoint",),
         translation_key="target_temperature",
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         suggested_display_precision=1,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="room_hum",
+        required_properties=("room_hum",),
         translation_key="room_humidity",
         device_class=SensorDeviceClass.HUMIDITY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="get_device_status",
+        required_properties=("get_device_status",),
         translation_key="device_status",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="get_device_mode",
+        required_properties=("get_device_mode",),
         translation_key="device_mode",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="get_int_fan_speed",
+        required_properties=("get_int_fan_speed",),
         translation_key="fan_speed",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="get_silent_function",
+        required_properties=("get_silent_function",),
         translation_key="silent_mode",
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="filter_hours",
+        required_properties=("filter_hours",),
         translation_key="filter_hours",
         device_class=SensorDeviceClass.DURATION,
         state_class=SensorStateClass.TOTAL_INCREASING,
         native_unit_of_measurement=UnitOfTime.HOURS,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="power_consumption",
+        required_properties=("power_consumption",),
         translation_key="power_consumption",
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="wifi_signal",
+        required_properties=("cst_rssi",),
+        data_key="cst_rssi",
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         translation_key="wifi_signal_strength",
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
-        entity_registry_enabled_default=False,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="error_code",
+        required_properties=("error_code",),
         translation_key="error_code",
         entity_category=EntityCategory.DIAGNOSTIC,
         entity_registry_enabled_default=False,
     ),
-    SensorEntityDescription(
+    DeLonghiSensorDescription(
         key="operating_hours",
+        required_properties=("operating_hours",),
         translation_key="operating_hours",
         device_class=SensorDeviceClass.DURATION,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -131,7 +155,13 @@ async def async_setup_entry(
                     coordinator=coordinator,
                     description=description,
                 )
-                for description in SENSOR_DESCRIPTIONS
+                for description in async_supported_descriptions(
+                    hass,
+                    "sensor",
+                    coordinator.dsn,
+                    coordinator.available_properties,
+                    SENSOR_DESCRIPTIONS,
+                )
             ]
         )
 
@@ -147,11 +177,12 @@ class DeLonghiSensor(CoordinatorEntity, SensorEntity):
     """Representation of a De'Longhi sensor."""
 
     _attr_has_entity_name = True
+    entity_description: DeLonghiSensorDescription
 
     def __init__(
         self,
         coordinator,
-        description: SensorEntityDescription,
+        description: DeLonghiSensorDescription,
     ) -> None:
         """Initialize the sensor."""
         super().__init__(coordinator)
@@ -170,7 +201,7 @@ class DeLonghiSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         """Return the value of the sensor."""
-        value = self.coordinator.data.get(self.entity_description.key)
+        value = self.coordinator.data.get(self._data_key)
 
         if value is None:
             return None
@@ -190,9 +221,13 @@ class DeLonghiSensor(CoordinatorEntity, SensorEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
-            super().available and self.entity_description.key in self.coordinator.data
-        )
+        return super().available and self._data_key in self.coordinator.data
+
+    @property
+    def _data_key(self) -> str:
+        """Return the device property this sensor reads."""
+        return self.entity_description.data_key or self.entity_description.key
+
 
 class HeaterTemperature(CoordinatorEntity, SensorEntity):
     """Representation of a De'Longhi heater temperature sensor."""

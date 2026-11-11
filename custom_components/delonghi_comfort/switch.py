@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import logging
 from typing import Any
 
@@ -11,18 +12,28 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
+from .capabilities import async_supported_descriptions
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
+@dataclass(frozen=True, kw_only=True)
+class DeLonghiSwitchDescription(SwitchEntityDescription):
+    """Switch description with the device properties it needs."""
+
+    required_properties: tuple[str, ...]
+
+
 SWITCH_DESCRIPTIONS = (
-    SwitchEntityDescription(
+    DeLonghiSwitchDescription(
         key="get_device_status",
+        required_properties=("get_device_status", "set_device_status"),
         translation_key="device_power",
         icon="mdi:power",
     ),
-    SwitchEntityDescription(
+    DeLonghiSwitchDescription(
         key="get_silent_function",
+        required_properties=("get_silent_function", "set_silent_function"),
         translation_key="silent_mode",
         icon="mdi:volume-mute",
     ),
@@ -58,7 +69,13 @@ async def async_setup_entry(
                     coordinator=coordinator,
                     description=description,
                 )
-                for description in SWITCH_DESCRIPTIONS
+                for description in async_supported_descriptions(
+                    hass,
+                    "switch",
+                    coordinator.dsn,
+                    coordinator.available_properties,
+                    SWITCH_DESCRIPTIONS,
+                )
             ]
         )
 
@@ -80,11 +97,12 @@ class DeLonghiSwitch(CoordinatorEntity, SwitchEntity):
     """Representation of a De'Longhi switch entity."""
 
     _attr_has_entity_name = True
+    entity_description: DeLonghiSwitchDescription
 
     def __init__(
         self,
         coordinator,
-        description: SwitchEntityDescription,
+        description: DeLonghiSwitchDescription,
     ) -> None:
         """Initialize the switch entity."""
         super().__init__(coordinator)
