@@ -9,30 +9,29 @@ This repository is a maintained revision of the original De'Longhi Comfort integ
 - Added responsive power and silent-mode state confirmation, with silent mode disabled while the unit is off.
 - Updated coordinator data handling and cloud polling defaults.
 
-This fork supports Home Assistant 2024.8 and newer. It is an independent community project and is not affiliated with or endorsed by De'Longhi. The De'Longhi name and logo are the property of De'Longhi S.p.A. and are used only to identify compatible products; all rights to those marks remain with De'Longhi S.p.A.
+This fork supports Home Assistant 2024.8 and newer. It is an independent community project and is not affiliated with or endorsed by De'Longhi.
 
-[![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs)
+[![HACS](https://img.shields.io/badge/HACS-Custom%20repository-blue.svg)](https://www.hacs.xyz/docs/faq/custom_repositories/)
 [![GitHub release](https://img.shields.io/github/release/DA-Osborne/delonghi-comfort-integration.svg)](https://github.com/DA-Osborne/delonghi-comfort-integration/releases/)
 
-This repository contains a comprehensive Home Assistant integration for De'Longhi Comfort air conditioning and dehumidification devices. The integration provides full control and monitoring capabilities through Home Assistant's user interface.
+This is an unofficial Home Assistant integration for compatible De'Longhi Comfort air conditioners and connected heaters. It communicates with De'Longhi's cloud service, so an internet connection is required.
 
 ## ⚠️ Disclaimer
 
 **IMPORTANT**: This integration is provided "as-is" without any warranty or guarantee. The author takes no responsibility for any damage, data loss, or issues that may arise from using this integration. Use at your own risk.
 
-**AI-Assisted Development**: Much of the work converting this to a Home Assistant integration was done using **GitHub Copilot** and other AI assistance tools. This README was also created with the help of an LLM model. While every effort has been made to ensure accuracy and functionality, please thoroughly test before deploying in production environments.
-
-This integration is based on the excellent work of:
+This integration builds on work from:
 - **[rtfpessoa/delonghi-comfort-client](https://github.com/rtfpessoa/delonghi-comfort-client)** - Thank you for the initial client implementation
 - **[duckwc/ECAMpy](https://github.com/duckwc/ECAMpy)** - Thanks for the authentication and token conversion code
 
 ## 🚀 Features
 
 ### Climate Control
-- **HVAC Modes**: Cool, Heat, Dry (dehumidify), Fan Only, Off
+- **Air conditioners**: Cool, Dry (dehumidify), Fan Only, Off
+- **Connected heaters**: Heat and Off
 - **Temperature Control**: Set target temperature with precise control
 - **Fan Speed Control**: Multiple fan speed settings
-- **Real-time Status**: Live updates of device status and settings
+- **Status Updates**: Cloud polling, with commanded states reconciled as the service reports them
 
 ### Sensors
 - **Room Temperature**: Current ambient temperature
@@ -50,9 +49,8 @@ This integration is based on the excellent work of:
 
 ### Advanced Features
 - **Configuration Flow**: Easy setup through Home Assistant UI
-- **Device Discovery**: Automatic detection of De'Longhi devices
-- **Coordinator Pattern**: Efficient data updates with minimal API calls
-- **Cloud Polling**: Regular status updates from De'Longhi cloud services
+- **Account Discovery**: Finds devices associated with the configured account
+- **Cloud Polling**: Configurable 60-second default interval (30-300 seconds)
 
 ## 📋 Requirements
 
@@ -62,11 +60,11 @@ This integration is based on the excellent work of:
 
 ## 🔧 Installation
 
-### Method 1: HACS (Recommended)
+### Method 1: HACS Custom Repository
 1. Open HACS in Home Assistant
 2. Go to "Integrations"
 3. Click the three dots menu and select "Custom repositories"
-4. Add this repository URL and select "Integration" as the category
+4. Add `https://github.com/DA-Osborne/delonghi-comfort-integration` as an Integration repository
 5. Find "De'Longhi Comfort" in the list and install it
 6. Restart Home Assistant
 
@@ -108,12 +106,10 @@ This integration is based on the excellent work of:
 4. Enter your De'Longhi Comfort account credentials:
    - **Username**: Your De'Longhi account email
    - **Password**: Your De'Longhi account password
-   - **Language**: Select your preferred language/region
-   - **Scan Interval**: Update frequency (default: 60 seconds)
+   - **Language**: Select the language/locale used for account authentication
 
 ### Configuration Options
-- **Scan Interval**: How often to poll the API for updates (30-300 seconds)
-- **Device Selection**: Choose which devices to integrate
+- **Scan Interval**: How often to poll the API (default: 60 seconds; 30-300 seconds)
 
 ## 🏠 Usage
 
@@ -152,6 +148,9 @@ logger:
   logs:
     custom_components.delonghi_comfort: debug
 ```
+
+### Device API Inspection
+  The repository includes `scripts/inspect_device.py` for local troubleshooting. It prompts for credentials, lists account devices, and writes the selected device's raw property data to `scripts/delonghi_device_dump.json`. The dump may contain device identifiers, network details, and property values; review and redact it before sharing. The generated dump is excluded from Git.
 
 ## 🤝 Contributing
 
