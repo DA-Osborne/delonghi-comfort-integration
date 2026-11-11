@@ -23,6 +23,17 @@
           }
         }
       }
+    },
+    "switch": {
+      "device_power": {
+        "default": "mdi:power"
+      },
+      "silent_mode": {
+        "default": "mdi:volume-high",
+        "state": {
+          "on": "mdi:volume-mute"
+        }
+      }
     }
   }
 }

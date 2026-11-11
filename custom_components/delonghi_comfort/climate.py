@@ -218,10 +218,6 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
         else:
             _LOGGER.error("Failed to turn off device")
 
-    @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional state attributes."""
-        return dict(self.coordinator.data)
 
 class DeLonghiHeater(DeLonghiEntity, ClimateEntity):
     """Representation of a De'Longhi climate device."""

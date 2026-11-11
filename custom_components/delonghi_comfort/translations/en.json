@@ -60,16 +60,35 @@
         "name": "Target humidity"
       },
       "device_status": {
-        "name": "Device status"
+        "name": "Device status",
+        "state": {
+          "on": "On",
+          "off": "Off"
+        }
       },
       "device_mode": {
-        "name": "Device mode"
+        "name": "Device mode",
+        "state": {
+          "cooling": "Cooling",
+          "dehumidification": "Dehumidification",
+          "fan_only": "Fan only"
+        }
       },
       "fan_speed": {
-        "name": "Fan speed"
+        "name": "Fan speed",
+        "state": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High",
+          "auto": "Auto"
+        }
       },
       "silent_mode": {
-        "name": "Silent mode"
+        "name": "Silent mode",
+        "state": {
+          "on": "On",
+          "off": "Off"
+        }
       },
       "filter_hours": {
         "name": "Filter hours"
@@ -97,7 +116,12 @@
     },
     "select": {
       "device_mode": {
-        "name": "Device mode"
+        "name": "Mode",
+        "state": {
+          "cooling": "Cooling",
+          "dehumidification": "Dehumidification",
+          "fan_only": "Fan only"
+        }
       }
     },
     "switch": {

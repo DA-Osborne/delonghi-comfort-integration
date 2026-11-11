@@ -28,13 +28,12 @@ SWITCH_DESCRIPTIONS = (
         key="get_device_status",
         required_properties=("get_device_status", "set_device_status"),
         translation_key="device_power",
-        icon="mdi:power",
+        entity_registry_enabled_default=False,
     ),
     DeLonghiSwitchDescription(
         key="get_silent_function",
         required_properties=("get_silent_function", "set_silent_function"),
         translation_key="silent_mode",
-        icon="mdi:volume-mute",
     ),
 )
 

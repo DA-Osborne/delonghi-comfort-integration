@@ -36,6 +36,14 @@ class DeLonghiSensorDescription(SensorEntityDescription):
 
     required_properties: tuple[str, ...]
     data_key: str | None = None
+    # Maps raw device values to translated state names for enum sensors.
+    value_map: dict[Any, str] | None = None
+
+
+STATUS_STATES = {1: "on", 2: "off"}
+MODE_STATES = {1: "cooling", 2: "dehumidification", 3: "fan_only"}
+FAN_SPEED_STATES = {1: "low", 2: "medium", 3: "high", 4: "auto"}
+SILENT_STATES = {0: "off", 1: "on"}
 
 
 SENSOR_DESCRIPTIONS = (
@@ -56,6 +64,7 @@ SENSOR_DESCRIPTIONS = (
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         suggested_display_precision=1,
+        entity_registry_enabled_default=False,
     ),
     DeLonghiSensorDescription(
         key="room_hum",
@@ -69,25 +78,41 @@ SENSOR_DESCRIPTIONS = (
         key="get_device_status",
         required_properties=("get_device_status",),
         translation_key="device_status",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(STATUS_STATES.values()),
+        value_map=STATUS_STATES,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     DeLonghiSensorDescription(
         key="get_device_mode",
         required_properties=("get_device_mode",),
         translation_key="device_mode",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(MODE_STATES.values()),
+        value_map=MODE_STATES,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     DeLonghiSensorDescription(
         key="get_int_fan_speed",
         required_properties=("get_int_fan_speed",),
         translation_key="fan_speed",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(FAN_SPEED_STATES.values()),
+        value_map=FAN_SPEED_STATES,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     DeLonghiSensorDescription(
         key="get_silent_function",
         required_properties=("get_silent_function",),
         translation_key="silent_mode",
+        device_class=SensorDeviceClass.ENUM,
+        options=list(SILENT_STATES.values()),
+        value_map=SILENT_STATES,
         entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
     ),
     DeLonghiSensorDescription(
         key="filter_hours",
@@ -195,15 +220,9 @@ class DeLonghiSensor(DeLonghiEntity, SensorEntity):
         if value is None:
             return None
 
-        # Apply value transformation for specific sensors
-        if self.entity_description.key == "get_device_status":
-            return "on" if value == 1 else "off" if value == 2 else "unknown"
-        if self.entity_description.key == "get_device_mode":
-            return {1: "cooling", 2: "dehumidification", 3: "fan_only"}.get(
-                value, "unknown"
-            )
-        if self.entity_description.key == "get_silent_function":
-            return "on" if value == 1 else "off" if value == 0 else "unknown"
+        if self.entity_description.value_map is not None:
+            # A value outside the known map is reported as unknown.
+            return self.entity_description.value_map.get(value)
 
         return value
 

@@ -33,6 +33,7 @@ NUMBER_DESCRIPTIONS = (
         key="temp_setpoint",
         required_properties=("temp_setpoint", "set_temp_setpoint"),
         translation_key="temperature_setpoint",
+        entity_registry_enabled_default=False,
         device_class=NumberDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         native_min_value=16,

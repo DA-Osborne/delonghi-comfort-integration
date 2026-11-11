@@ -233,6 +233,57 @@ class PlatformGatingTests(TestCase):
                 self.assertEqual(entity.device_info["model"], "EL112")
         self.assertIsNone(entities[0].name)
 
+    def test_enum_sensors_have_options_and_translated_states(self) -> None:
+        translations = json.loads(
+            (_PACKAGE_DIR / "translations" / "en.json").read_text(encoding="utf-8")
+        )["entity"]["sensor"]
+        enum_sensors = [
+            d for d in self.sensor.SENSOR_DESCRIPTIONS if d.value_map is not None
+        ]
+        self.assertEqual(len(enum_sensors), 4)
+        for description in enum_sensors:
+            with self.subTest(key=description.key):
+                self.assertEqual(description.options, list(description.value_map.values()))
+                states = translations[description.translation_key]["state"]
+                self.assertEqual(set(states), set(description.options))
+
+    def test_enum_sensor_reports_unknown_values_as_none(self) -> None:
+        coordinator = self._coordinator({"get_device_status": 7, "get_device_mode": 2})
+        by_key = {d.key: d for d in self.sensor.SENSOR_DESCRIPTIONS}
+        status = self.sensor.DeLonghiSensor(coordinator, by_key["get_device_status"])
+        mode = self.sensor.DeLonghiSensor(coordinator, by_key["get_device_mode"])
+        self.assertIsNone(status.native_value)
+        self.assertEqual(mode.native_value, "dehumidification")
+
+    def test_duplicates_are_disabled_by_default_and_primary_entities_are_not(self) -> None:
+        disabled = {
+            d.key
+            for d in self.sensor.SENSOR_DESCRIPTIONS
+            if not d.entity_registry_enabled_default
+        }
+        self.assertEqual(
+            disabled,
+            {"temp_setpoint", "get_device_status", "get_device_mode",
+             "get_int_fan_speed", "get_silent_function", "error_code", "operating_hours"},
+        )
+        switches = {d.key: d for d in self.switch.SWITCH_DESCRIPTIONS}
+        self.assertFalse(switches["get_device_status"].entity_registry_enabled_default)
+        self.assertTrue(switches["get_silent_function"].entity_registry_enabled_default)
+        numbers = {d.key: d for d in self.number.NUMBER_DESCRIPTIONS}
+        self.assertFalse(numbers["temp_setpoint"].entity_registry_enabled_default)
+
+    def test_translated_switches_have_icons(self) -> None:
+        icons = json.loads((_PACKAGE_DIR / "icons.json").read_text(encoding="utf-8"))
+        for description in self.switch.SWITCH_DESCRIPTIONS:
+            with self.subTest(key=description.key):
+                self.assertIsNone(description.icon)
+                self.assertIn(description.translation_key, icons["entity"]["switch"])
+
+    def test_ac_climate_does_not_dump_raw_properties(self) -> None:
+        climate = importlib.import_module("custom_components.delonghi_comfort.climate")
+        entity = climate.DeLonghiClimate(self._coordinator({"room_temp": 22.4}))
+        self.assertIsNone(entity.extra_state_attributes)
+
     def test_wifi_signal_reads_cst_rssi(self) -> None:
         description = next(
             d for d in self.sensor.SENSOR_DESCRIPTIONS if d.key == "wifi_signal"
