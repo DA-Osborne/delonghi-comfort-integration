@@ -104,6 +104,12 @@
       },
       "operating_hours": {
         "name": "Operating hours"
+      },
+      "remote_signal_strength": {
+        "name": "Remote signal strength"
+      },
+      "pipe_temperature": {
+        "name": "Pipe temperature"
       }
     },
     "number": {

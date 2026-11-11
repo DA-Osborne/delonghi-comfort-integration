@@ -159,7 +159,8 @@ class PlatformGatingTests(TestCase):
                 "get_device_mode",
                 "get_int_fan_speed",
                 "get_silent_function",
-                "wifi_signal",
+                "cst_rssi",
+                "second_room_temp",
             },
         )
         self.assertEqual(
@@ -264,7 +265,8 @@ class PlatformGatingTests(TestCase):
         self.assertEqual(
             disabled,
             {"temp_setpoint", "get_device_status", "get_device_mode",
-             "get_int_fan_speed", "get_silent_function", "error_code", "operating_hours"},
+             "get_int_fan_speed", "get_silent_function", "error_code",
+             "operating_hours", "wifi_signal"},
         )
         switches = {d.key: d for d in self.switch.SWITCH_DESCRIPTIONS}
         self.assertFalse(switches["get_device_status"].entity_registry_enabled_default)
@@ -284,9 +286,12 @@ class PlatformGatingTests(TestCase):
         entity = climate.DeLonghiClimate(self._coordinator({"room_temp": 22.4}))
         self.assertIsNone(entity.extra_state_attributes)
 
-    def test_wifi_signal_reads_cst_rssi(self) -> None:
-        description = next(
-            d for d in self.sensor.SENSOR_DESCRIPTIONS if d.key == "wifi_signal"
-        )
-        self.assertEqual(description.data_key, "cst_rssi")
+    def test_remote_link_is_not_presented_as_wifi(self) -> None:
+        # cst_rssi is the Bluetooth link to the CST remote. It is verified by the
+        # remote_cradle capture (-72 away from the unit, -49 docked). The device
+        # reports no Wi-Fi signal property, so the Wi-Fi sensor must not exist.
+        by_key = {d.key: d for d in self.sensor.SENSOR_DESCRIPTIONS}
+        self.assertEqual(by_key["cst_rssi"].translation_key, "remote_signal_strength")
+        self.assertEqual(by_key["wifi_signal"].required_properties, ("wifi_signal",))
+        self.assertNotIn("wifi_signal", AC)
         self.assertIn("cst_rssi", AC)

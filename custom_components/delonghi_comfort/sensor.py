@@ -35,7 +35,6 @@ class DeLonghiSensorDescription(SensorEntityDescription):
     """Sensor description with the device properties it needs."""
 
     required_properties: tuple[str, ...]
-    data_key: str | None = None
     # Maps raw device values to translated state names for enum sensors.
     value_map: dict[Any, str] | None = None
 
@@ -134,12 +133,31 @@ SENSOR_DESCRIPTIONS = (
     ),
     DeLonghiSensorDescription(
         key="wifi_signal",
-        required_properties=("cst_rssi",),
-        data_key="cst_rssi",
+        required_properties=("wifi_signal",),
         native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
         translation_key="wifi_signal_strength",
         device_class=SensorDeviceClass.SIGNAL_STRENGTH,
         state_class=SensorStateClass.MEASUREMENT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+    ),
+    DeLonghiSensorDescription(
+        key="cst_rssi",
+        required_properties=("cst_rssi",),
+        translation_key="remote_signal_strength",
+        device_class=SensorDeviceClass.SIGNAL_STRENGTH,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    DeLonghiSensorDescription(
+        key="second_room_temp",
+        required_properties=("second_room_temp",),
+        translation_key="pipe_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
     ),
     DeLonghiSensorDescription(
@@ -215,7 +233,7 @@ class DeLonghiSensor(DeLonghiEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         """Return the value of the sensor."""
-        value = self.coordinator.data.get(self._data_key)
+        value = self.coordinator.data.get(self.entity_description.key)
 
         if value is None:
             return None
@@ -229,12 +247,9 @@ class DeLonghiSensor(DeLonghiEntity, SensorEntity):
     @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return super().available and self._data_key in self.coordinator.data
-
-    @property
-    def _data_key(self) -> str:
-        """Return the device property this sensor reads."""
-        return self.entity_description.data_key or self.entity_description.key
+        return (
+            super().available and self.entity_description.key in self.coordinator.data
+        )
 
 
 class HeaterTemperature(DeLonghiEntity, SensorEntity):
