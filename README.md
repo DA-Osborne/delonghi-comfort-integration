@@ -9,7 +9,7 @@ This repository is a maintained revision of the original De'Longhi Comfort integ
 - Added responsive power and silent-mode state confirmation, with silent mode disabled while the unit is off.
 - Updated coordinator data handling and cloud polling defaults.
 
-This fork supports Home Assistant 2024.8 and newer. It is an independent community project and is not affiliated with or endorsed by De'Longhi.
+This fork supports Home Assistant 2024.8 and newer. It is an independent community project and is not affiliated with or endorsed by De'Longhi. The De'Longhi name and logo are the property of De'Longhi S.p.A. and are used only to identify compatible products; all rights to those marks remain with De'Longhi S.p.A.
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs)
 [![GitHub release](https://img.shields.io/github/release/DA-Osborne/delonghi-comfort-integration.svg)](https://github.com/DA-Osborne/delonghi-comfort-integration/releases/)
