@@ -171,12 +171,24 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._pending_commands.clear()
 
     def get_device_info(self) -> DeviceInfo:
-        """Return device information for this coordinator."""
+        """Return device information for this coordinator.
+
+        The cloud device record describes the Wi-Fi module (its model and agent
+        version), so the appliance's own values from its properties are preferred.
+        """
+        data = self.data or {}
+        firmware = data.get("firmware_version")
+        wifi_module = data.get("mcu_host_version")
+        if firmware and wifi_module:
+            sw_version = f"{firmware} (Wi-Fi module {wifi_module})"
+        else:
+            sw_version = firmware or wifi_module or self.device_version
+        hw_version = data.get("hardware_version")
         return DeviceInfo(
             identifiers={(DOMAIN, self.dsn)},
             manufacturer="De'Longhi",
-            model=self.data.get("appliance_model"),
+            model=data.get("appliance_model") or self.device_model,
             name=self.device_name,
-            hw_version=self.data.get("hardware_version"),
-            sw_version=f"Fireware MDH:{self.data.get('firmware_version')} / Wi-Fi Module:{self.data.get('mcu_host_version')}",
+            hw_version=str(hw_version) if hw_version else None,
+            sw_version=str(sw_version) if sw_version else None,
         )

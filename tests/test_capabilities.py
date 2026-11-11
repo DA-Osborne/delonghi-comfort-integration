@@ -182,6 +182,57 @@ class PlatformGatingTests(TestCase):
             self._keys(self.number.NUMBER_DESCRIPTIONS, DEHUMIDIFIER),
         )
 
+    def _coordinator(self, data):
+        from custom_components.delonghi_comfort.coordinator import DeLonghiCoordinator
+
+        coordinator = MagicMock()
+        coordinator.dsn = "DSN1"
+        coordinator.device_name = "Lounge-AirCon"
+        coordinator.device_model = "AY008ESP1"
+        coordinator.device_version = "ADA 1.8.1"
+        coordinator.data = data
+        coordinator.get_device_info = lambda: DeLonghiCoordinator.get_device_info(
+            coordinator
+        )
+        return coordinator
+
+    def test_device_info_prefers_appliance_properties(self) -> None:
+        info = self._coordinator(
+            {
+                "appliance_model": "EL112",
+                "hardware_version": 1.1,
+                "firmware_version": "2.1",
+                "mcu_host_version": "4.2.2",
+            }
+        ).get_device_info()
+        self.assertEqual(info["model"], "EL112")
+        self.assertEqual(info["hw_version"], "1.1")
+        self.assertEqual(info["sw_version"], "2.1 (Wi-Fi module 4.2.2)")
+        self.assertEqual(info["name"], "Lounge-AirCon")
+        self.assertEqual(info["identifiers"], {("delonghi_comfort", "DSN1")})
+
+    def test_device_info_falls_back_to_device_record(self) -> None:
+        info = self._coordinator({}).get_device_info()
+        self.assertEqual(info["model"], "AY008ESP1")
+        self.assertEqual(info["sw_version"], "ADA 1.8.1")
+        self.assertIsNone(info["hw_version"])
+
+    def test_entities_share_device_and_naming(self) -> None:
+        climate = importlib.import_module("custom_components.delonghi_comfort.climate")
+        coordinator = self._coordinator({"appliance_model": "EL112"})
+        entities = [
+            climate.DeLonghiClimate(coordinator),
+            self.sensor.DeLonghiSensor(coordinator, self.sensor.SENSOR_DESCRIPTIONS[0]),
+            self.switch.DeLonghiSwitch(coordinator, self.switch.SWITCH_DESCRIPTIONS[0]),
+            self.number.DeLonghiNumber(coordinator, self.number.NUMBER_DESCRIPTIONS[0]),
+            self.select.DeLonghiSelect(coordinator, self.select.SELECT_DESCRIPTIONS[0]),
+        ]
+        for entity in entities:
+            with self.subTest(entity=type(entity).__name__):
+                self.assertTrue(entity.has_entity_name)
+                self.assertEqual(entity.device_info["model"], "EL112")
+        self.assertIsNone(entities[0].name)
+
     def test_wifi_signal_reads_cst_rssi(self) -> None:
         description = next(
             d for d in self.sensor.SENSOR_DESCRIPTIONS if d.key == "wifi_signal"

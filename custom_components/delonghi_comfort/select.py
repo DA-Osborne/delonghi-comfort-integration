@@ -8,11 +8,10 @@ import logging
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
 from .capabilities import async_supported_descriptions
-from .const import DOMAIN
+from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,10 +67,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class DeLonghiSelect(CoordinatorEntity, SelectEntity):
+class DeLonghiSelect(DeLonghiEntity, SelectEntity):
     """Representation of a De'Longhi select entity."""
 
-    _attr_has_entity_name = True
     entity_description: DeLonghiSelectDescription
 
     def __init__(
@@ -83,15 +81,6 @@ class DeLonghiSelect(CoordinatorEntity, SelectEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.dsn}_{description.key}"
-
-        # Device information
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.dsn)},
-            "name": coordinator.device_name,
-            "manufacturer": "De'Longhi",
-            "model": coordinator.device_model,
-            "sw_version": coordinator.device_version,
-        }
 
     @property
     def current_option(self) -> str | None:
@@ -131,9 +120,8 @@ class DeLonghiSelect(CoordinatorEntity, SelectEntity):
             super().available and self.entity_description.key in self.coordinator.data
         )
 
-class HeaterBrightness(CoordinatorEntity, SelectEntity):
+class HeaterBrightness(DeLonghiEntity, SelectEntity):
     """Representation of a heater brightness entity."""
-    _attr_has_entity_name = True
     _attr_icon = "mdi:brightness-6"
     _attr_name = "Display brightness"
 
@@ -143,7 +131,6 @@ class HeaterBrightness(CoordinatorEntity, SelectEntity):
         """Initialize the select entity."""
         super().__init__(coordinator)
         self._attr_unique_id = f"delonghi_heater_{coordinator.dsn}_brightness"
-        self._attr_device_info = coordinator.get_device_info()
 
     @property
     def current_option(self) -> str | None:

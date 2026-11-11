@@ -14,11 +14,10 @@ from homeassistant.components.number import (
 from homeassistant.const import PERCENTAGE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
 from .capabilities import async_supported_descriptions
-from .const import DOMAIN
+from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -85,10 +84,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class DeLonghiNumber(CoordinatorEntity, NumberEntity):
+class DeLonghiNumber(DeLonghiEntity, NumberEntity):
     """Representation of a De'Longhi number entity."""
 
-    _attr_has_entity_name = True
     entity_description: DeLonghiNumberDescription
 
     def __init__(
@@ -100,15 +98,6 @@ class DeLonghiNumber(CoordinatorEntity, NumberEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.dsn}_{description.key}"
-
-        # Device information
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.dsn)},
-            "name": coordinator.device_name,
-            "manufacturer": "De'Longhi",
-            "model": coordinator.device_model,
-            "sw_version": coordinator.device_version,
-        }
 
     @property
     def native_value(self) -> float | None:

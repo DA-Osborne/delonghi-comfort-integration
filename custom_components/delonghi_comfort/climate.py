@@ -13,10 +13,9 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import ATTR_TEMPERATURE, UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
-from .const import DOMAIN
+from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,8 +49,10 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class DeLonghiClimate(CoordinatorEntity, ClimateEntity):
+class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
     """Representation of a De'Longhi climate device."""
+
+    _attr_name = None
 
     def __init__(
         self,
@@ -64,7 +65,6 @@ class DeLonghiClimate(CoordinatorEntity, ClimateEntity):
 
         # Entity information
         self._attr_unique_id = f"delonghi_comfort_{self._dsn}"
-        self._attr_name = coordinator.device_name
 
         # Climate features
         self._attr_supported_features = (
@@ -89,15 +89,6 @@ class DeLonghiClimate(CoordinatorEntity, ClimateEntity):
         self._attr_max_temp = 32
         self._attr_target_temperature_step = 1
         self._attr_precision = 1
-
-        # Device information
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, self._dsn)},
-            "name": coordinator.device_name,
-            "manufacturer": "De'Longhi",
-            "model": coordinator.device_model,
-            "sw_version": coordinator.device_version,
-        }
 
     @property
     def available(self) -> bool:
@@ -232,12 +223,11 @@ class DeLonghiClimate(CoordinatorEntity, ClimateEntity):
         """Return additional state attributes."""
         return dict(self.coordinator.data)
 
-class DeLonghiHeater(CoordinatorEntity, ClimateEntity):
+class DeLonghiHeater(DeLonghiEntity, ClimateEntity):
     """Representation of a De'Longhi climate device."""
 
     # Entity - Generic properties
     _attr_supported_features = (ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.FAN_MODE | ClimateEntityFeature.PRESET_MODE | ClimateEntityFeature.TURN_ON | ClimateEntityFeature.TURN_OFF)
-    _attr_has_entity_name = True
     _attr_name = None
     _attr_translation_key = "heater"
 
@@ -263,7 +253,6 @@ class DeLonghiHeater(CoordinatorEntity, ClimateEntity):
         self._api = coordinator.api
 
         self._attr_unique_id = f"delonghi_heater_{self._dsn}"
-        self._attr_device_info = coordinator.get_device_info()
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:

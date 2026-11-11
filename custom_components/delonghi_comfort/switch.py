@@ -9,11 +9,10 @@ from typing import Any
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription, SwitchDeviceClass
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
 from .capabilities import async_supported_descriptions
-from .const import DOMAIN
+from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -93,10 +92,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class DeLonghiSwitch(CoordinatorEntity, SwitchEntity):
+class DeLonghiSwitch(DeLonghiEntity, SwitchEntity):
     """Representation of a De'Longhi switch entity."""
 
-    _attr_has_entity_name = True
     entity_description: DeLonghiSwitchDescription
 
     def __init__(
@@ -108,15 +106,6 @@ class DeLonghiSwitch(CoordinatorEntity, SwitchEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.dsn}_{description.key}"
-
-        # Device information
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.dsn)},
-            "name": coordinator.device_name,
-            "manufacturer": "De'Longhi",
-            "model": coordinator.device_model,
-            "sw_version": coordinator.device_version,
-        }
 
     @property
     def is_on(self) -> bool | None:
@@ -175,11 +164,10 @@ class DeLonghiSwitch(CoordinatorEntity, SwitchEntity):
             super().available and self.entity_description.key in self.coordinator.data
         )
 
-class HeaterSwitch(CoordinatorEntity, SwitchEntity):
+class HeaterSwitch(DeLonghiEntity, SwitchEntity):
     """Representation of a De'Longhi heater switch entity."""
 
     _attr_device_class = SwitchDeviceClass.SWITCH
-    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -191,7 +179,6 @@ class HeaterSwitch(CoordinatorEntity, SwitchEntity):
         self.entity_description = description
         self._attr_translation_key = description.key
         self._attr_unique_id = f"delonghi_heater_{coordinator.dsn}_{description.key}"
-        self._attr_device_info = coordinator.get_device_info()
 
     @property
     def is_on(self) -> bool | None:

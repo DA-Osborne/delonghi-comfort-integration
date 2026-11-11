@@ -23,11 +23,10 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import DeLonghiConfigEntry
 from .capabilities import async_supported_descriptions
-from .const import DOMAIN
+from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -173,10 +172,9 @@ async def async_setup_entry(
     async_add_entities(entities)
 
 
-class DeLonghiSensor(CoordinatorEntity, SensorEntity):
+class DeLonghiSensor(DeLonghiEntity, SensorEntity):
     """Representation of a De'Longhi sensor."""
 
-    _attr_has_entity_name = True
     entity_description: DeLonghiSensorDescription
 
     def __init__(
@@ -188,15 +186,6 @@ class DeLonghiSensor(CoordinatorEntity, SensorEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.dsn}_{description.key}"
-
-        # Device information
-        self._attr_device_info = {
-            "identifiers": {(DOMAIN, coordinator.dsn)},
-            "name": coordinator.device_name,
-            "manufacturer": "De'Longhi",
-            "model": coordinator.device_model,
-            "sw_version": coordinator.device_version,
-        }
 
     @property
     def native_value(self) -> Any:
@@ -229,9 +218,8 @@ class DeLonghiSensor(CoordinatorEntity, SensorEntity):
         return self.entity_description.data_key or self.entity_description.key
 
 
-class HeaterTemperature(CoordinatorEntity, SensorEntity):
+class HeaterTemperature(DeLonghiEntity, SensorEntity):
     """Representation of a De'Longhi heater temperature sensor."""
-    _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.TEMPERATURE
     _attr_name = "Temperature"
 
@@ -242,7 +230,6 @@ class HeaterTemperature(CoordinatorEntity, SensorEntity):
         """Initialize the sensor."""
         super().__init__(coordinator)
         self._attr_unique_id = f"delonghi_heater_{coordinator.dsn}_temperature"
-        self._attr_device_info = coordinator.get_device_info()
 
     @property
     def native_value(self) -> Any:
