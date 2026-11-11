@@ -176,4 +176,4 @@ pyrightconfig.json
 # End of https://www.toptal.com/developers/gitignore/api/python
 
 # Local De'Longhi API inspection output contains device/account details.
-scripts/delonghi_device_dump.json
+scripts/delonghi_device_dump*.json

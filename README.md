@@ -150,7 +150,7 @@ logger:
 ```
 
 ### Device API Inspection
-  The repository includes `scripts/inspect_device.py` for local troubleshooting. It prompts for credentials, lists account devices, and writes the selected device's raw property data to `scripts/delonghi_device_dump.json`. The dump may contain device identifiers, network details, and property values; review and redact it before sharing. The generated dump is excluded from Git.
+  The repository includes `scripts/inspect_device.py` for local troubleshooting. It prompts for credentials (or reads `DELONGHI_USERNAME`, `DELONGHI_PASSWORD`, `DELONGHI_LANGUAGE` and `DELONGHI_DEVICE_INDEX` from the environment), lists account devices, and writes the selected device's raw property data to `scripts/delonghi_device_dump.json`. Use `--label NAME` to write `scripts/delonghi_device_dump_NAME.json` instead. The dump may contain device identifiers, network details, and property values; review and redact it before sharing. Generated dumps are excluded from Git.
 
 ## 🤝 Contributing
 

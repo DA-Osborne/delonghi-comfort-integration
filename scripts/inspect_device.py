@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import getpass
 import importlib
 import json
 import logging
+import os
+import re
 import sys
 import types
 from pathlib import Path
@@ -45,11 +48,34 @@ def device_info(device: dict[str, Any]) -> dict[str, Any]:
     return nested if isinstance(nested, dict) else device
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--label",
+        help="Save to scripts/delonghi_device_dump_<label>.json instead of the default file.",
+    )
+    args = parser.parse_args()
+    if args.label and not re.fullmatch(r"[A-Za-z0-9_-]+", args.label):
+        parser.error("--label may only contain letters, digits, '_' and '-'.")
+    return args
+
+
 async def main() -> None:
+    args = parse_args()
     logging.getLogger(PACKAGE_NAME).setLevel(logging.CRITICAL)
-    username = input("De'Longhi account email: ").strip()
-    password = getpass.getpass("De'Longhi account password (not echoed): ")
-    language = input("Account language [en-au]: ").strip() or "en-au"
+    # DELONGHI_USERNAME, DELONGHI_PASSWORD, DELONGHI_LANGUAGE and DELONGHI_DEVICE_INDEX
+    # skip the matching prompts when set.
+    username = (
+        os.environ.get("DELONGHI_USERNAME") or input("De'Longhi account email: ")
+    ).strip()
+    password = os.environ.get("DELONGHI_PASSWORD") or getpass.getpass(
+        "De'Longhi account password (not echoed): "
+    )
+    language = (
+        os.environ.get("DELONGHI_LANGUAGE")
+        or input("Account language [en-au]: ").strip()
+        or "en-au"
+    )
 
     timeout = aiohttp.ClientTimeout(total=60)
     async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -78,7 +104,11 @@ async def main() -> None:
                 f"model={info.get('model', '<unknown>')}"
             )
 
-        selection = input("Device index to inspect [0]: ").strip() or "0"
+        selection = (
+            os.environ.get("DELONGHI_DEVICE_INDEX")
+            or input("Device index to inspect [0]: ").strip()
+            or "0"
+        )
         try:
             selected = devices[int(selection)]
         except (ValueError, IndexError):
@@ -98,7 +128,12 @@ async def main() -> None:
                 return
 
         try:
-            output_path = Path(__file__).resolve().with_name("delonghi_device_dump.json")
+            file_name = (
+                f"delonghi_device_dump_{args.label}.json"
+                if args.label
+                else "delonghi_device_dump.json"
+            )
+            output_path = Path(__file__).resolve().with_name(file_name)
             output_path.write_text(
                 json.dumps(
                     redact_sensitive(
