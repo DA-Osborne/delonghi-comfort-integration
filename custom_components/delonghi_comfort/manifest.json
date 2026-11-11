@@ -1,12 +1,12 @@
 {
   "domain": "delonghi_comfort",
   "name": "De'Longhi Comfort",
-  "version": "1.0.0",
-  "documentation": "https://github.com/philm5/delonghi-comfort-integration",
+  "version": "2.0.0",
+  "documentation": "https://github.com/DA-Osborne/delonghi-comfort-integration",
   "requirements": [],
   "dependencies": [],
   "codeowners": [
-    "@philm5"
+    "@DA-Osborne"
   ],
   "config_flow": true,
   "iot_class": "cloud_polling",

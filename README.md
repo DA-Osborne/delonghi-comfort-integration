@@ -1,7 +1,18 @@
 # De'Longhi Comfort Home Assistant Integration
 
+## Revised Fork
+
+This repository is a maintained revision of the original De'Longhi Comfort integration. It includes fixes and improvements verified with a working De'Longhi air conditioner:
+
+- Updated Gigya consent-signature parsing for the current De'Longhi login response.
+- Improved API error reporting, Home Assistant setup retries, and credential reauthentication.
+- Added responsive power and silent-mode state confirmation, with silent mode disabled while the unit is off.
+- Updated coordinator data handling and cloud polling defaults.
+
+This fork supports Home Assistant 2024.8 and newer. It is an independent community project and is not affiliated with or endorsed by De'Longhi.
+
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/custom-components/hacs)
-[![GitHub release](https://img.shields.io/github/release/philm5/delonghi-comfort-integration.svg)](https://github.com/philm5/delonghi-comfort-integration/releases/)
+[![GitHub release](https://img.shields.io/github/release/DA-Osborne/delonghi-comfort-integration.svg)](https://github.com/DA-Osborne/delonghi-comfort-integration/releases/)
 
 This repository contains a comprehensive Home Assistant integration for De'Longhi Comfort air conditioning and dehumidification devices. The integration provides full control and monitoring capabilities through Home Assistant's user interface.
 
@@ -45,7 +56,7 @@ This integration is based on the excellent work of:
 
 ## 📋 Requirements
 
-- Home Assistant 2023.1.0 or newer
+- Home Assistant 2024.8.0 or newer
 - De'Longhi Comfort account with registered devices
 - Internet connection for cloud API access
 
@@ -62,7 +73,7 @@ This integration is based on the excellent work of:
 ### Method 2: Manual Installation
 1. **Download the integration**:
    ```bash
-   git clone https://github.com/philm5/delonghi-comfort-integration.git
+    git clone https://github.com/DA-Osborne/delonghi-comfort-integration.git
    ```
 
 2. **Copy to custom_components**:
