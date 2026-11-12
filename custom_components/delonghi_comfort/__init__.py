@@ -35,6 +35,7 @@ DeLonghiConfigEntry: TypeAlias = ConfigEntry[DeLonghiRuntimeData]
 
 
 PLATFORMS: list[Platform] = [
+    Platform.BINARY_SENSOR,
     Platform.CLIMATE,
     Platform.NUMBER,
     Platform.SELECT,

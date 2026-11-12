@@ -27,7 +27,8 @@ This integration builds on work from:
 ## 🚀 Features
 
 ### Climate Control
-- **Air conditioners**: Cool, Dry (dehumidify), Fan Only, Off
+- **Air conditioners**: Cool, Dry (dehumidify), Fan Only, Off, and myEcoReal Feel (shown as Auto) on models that have it
+- **Vent swing**: Start or stop the flap swing on models that support it
 - **Connected heaters**: Heat and Off
 - **Temperature Control**: Set target temperature with precise control
 - **Fan Speed Control**: Multiple fan speed settings
@@ -40,12 +41,19 @@ This integration builds on work from:
 - **Device Status**: Operating status (on/off/standby)
 - **Device Mode**: Current operating mode
 - **Fan Speed**: Current fan speed setting
+- **Pipe Temperature**: Refrigerant pipe (evaporator) temperature, useful for seeing when the compressor is working
+- **Remote Control**: Temperature and humidity measured by the CST remote, plus whether it is connected, docked and being used
+- **myEcoReal Feel Comfort**: The comfort light colour (inactive, perfect, or not optimal)
+- **Alarms**: Tray full, probe failure, low humidity, frost protection and high temperature
+- **Timer and Schedule**: Whether the timer or weekly schedule is active
 
 ### Controls
 - **Power Switch**: Turn device on/off
 - **Temperature Controls**: Precise temperature adjustment
 - **Mode Selection**: Easy switching between operating modes
 - **Fan Speed Selection**: Control fan speed levels
+
+Entities are created only for the properties your model reports, so a model without a given feature does not get an empty entity for it. Entities that repeat the climate entity (target temperature, status, mode, fan speed, silent mode sensors, the power switch and the temperature number) are disabled by default on new installs.
 
 ### Advanced Features
 - **Configuration Flow**: Easy setup through Home Assistant UI

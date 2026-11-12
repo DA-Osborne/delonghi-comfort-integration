@@ -111,6 +111,20 @@
       },
       "pipe_temperature": {
         "name": "Pipe temperature"
+      },
+      "remote_temperature": {
+        "name": "Remote temperature"
+      },
+      "remote_humidity": {
+        "name": "Remote humidity"
+      },
+      "real_feel_comfort": {
+        "name": "myEcoReal Feel comfort",
+        "state": {
+          "inactive": "Inactive",
+          "other": "Not optimal (orange or green)",
+          "perfect": "Perfect (blue)"
+        }
       }
     },
     "number": {
@@ -138,6 +152,38 @@
       },
       "silent_mode": {
         "name": "Silent mode"
+      }
+    },
+    "binary_sensor": {
+      "remote_connected": {
+        "name": "Remote connected"
+      },
+      "remote_sensor_in_use": {
+        "name": "Remote sensor in use"
+      },
+      "remote_docked": {
+        "name": "Remote docked"
+      },
+      "timer_active": {
+        "name": "Timer active"
+      },
+      "weekly_schedule": {
+        "name": "Weekly schedule"
+      },
+      "tray_full": {
+        "name": "Tray full"
+      },
+      "probe_failure": {
+        "name": "Probe failure"
+      },
+      "low_humidity": {
+        "name": "Low humidity"
+      },
+      "frost_protection": {
+        "name": "Frost protection"
+      },
+      "high_temperature": {
+        "name": "High temperature"
       }
     }
   }

@@ -37,12 +37,22 @@ class DeLonghiSensorDescription(SensorEntityDescription):
     required_properties: tuple[str, ...]
     # Maps raw device values to translated state names for enum sensors.
     value_map: dict[Any, str] | None = None
+    # State for raw values missing from value_map. When set, the raw value is
+    # also exposed as an attribute so new codes can be identified.
+    value_default: str | None = None
+    # Readings that come from the remote control are unavailable while it is
+    # not connected.
+    requires_remote: bool = False
 
 
 STATUS_STATES = {1: "on", 2: "off"}
 MODE_STATES = {1: "cooling", 2: "dehumidification", 3: "fan_only", 5: "real_feel"}
 FAN_SPEED_STATES = {1: "low", 2: "medium", 3: "high", 4: "auto"}
 SILENT_STATES = {0: "off", 1: "on"}
+# The comfort light of myEcoReal Feel: blue (4) is the best level. Orange and
+# green have not been captured yet, so every other code reads as "other".
+REAL_FEEL_COMFORT_STATES = {0: "inactive", 4: "perfect"}
+REAL_FEEL_OTHER_STATE = "other"
 
 
 SENSOR_DESCRIPTIONS = (
@@ -72,6 +82,34 @@ SENSOR_DESCRIPTIONS = (
         device_class=SensorDeviceClass.HUMIDITY,
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=PERCENTAGE,
+    ),
+    DeLonghiSensorDescription(
+        key="remote_temp",
+        required_properties=("remote_temp",),
+        translation_key="remote_temperature",
+        device_class=SensorDeviceClass.TEMPERATURE,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfTemperature.CELSIUS,
+        suggested_display_precision=1,
+        requires_remote=True,
+    ),
+    DeLonghiSensorDescription(
+        key="remote_hum",
+        required_properties=("remote_hum",),
+        translation_key="remote_humidity",
+        device_class=SensorDeviceClass.HUMIDITY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        requires_remote=True,
+    ),
+    DeLonghiSensorDescription(
+        key="real_feel_colour",
+        required_properties=("real_feel_colour",),
+        translation_key="real_feel_comfort",
+        device_class=SensorDeviceClass.ENUM,
+        options=[*REAL_FEEL_COMFORT_STATES.values(), REAL_FEEL_OTHER_STATE],
+        value_map=REAL_FEEL_COMFORT_STATES,
+        value_default=REAL_FEEL_OTHER_STATE,
     ),
     DeLonghiSensorDescription(
         key="get_device_status",
@@ -239,17 +277,34 @@ class DeLonghiSensor(DeLonghiEntity, SensorEntity):
             return None
 
         if self.entity_description.value_map is not None:
-            # A value outside the known map is reported as unknown.
-            return self.entity_description.value_map.get(value)
+            # A value outside the known map is reported as the default state, or
+            # as unknown when the description has none.
+            return self.entity_description.value_map.get(
+                value, self.entity_description.value_default
+            )
 
         return value
 
     @property
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Expose the raw code for sensors that map unknown codes to a default."""
+        if self.entity_description.value_default is None:
+            return None
+        return {"raw_value": self.coordinator.data.get(self.entity_description.key)}
+
+    @property
     def available(self) -> bool:
         """Return if entity is available."""
-        return (
+        if not (
             super().available and self.entity_description.key in self.coordinator.data
-        )
+        ):
+            return False
+        if (
+            self.entity_description.requires_remote
+            and self.coordinator.data.get("pairing_status") == 0
+        ):
+            return False
+        return True
 
 
 class HeaterTemperature(DeLonghiEntity, SensorEntity):

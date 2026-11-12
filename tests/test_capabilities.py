@@ -161,6 +161,9 @@ class PlatformGatingTests(TestCase):
                 "get_silent_function",
                 "cst_rssi",
                 "second_room_temp",
+                "remote_temp",
+                "remote_hum",
+                "real_feel_colour",
             },
         )
         self.assertEqual(
@@ -241,10 +244,13 @@ class PlatformGatingTests(TestCase):
         enum_sensors = [
             d for d in self.sensor.SENSOR_DESCRIPTIONS if d.value_map is not None
         ]
-        self.assertEqual(len(enum_sensors), 4)
+        self.assertEqual(len(enum_sensors), 5)
         for description in enum_sensors:
             with self.subTest(key=description.key):
-                self.assertEqual(description.options, list(description.value_map.values()))
+                expected = list(description.value_map.values())
+                if description.value_default:
+                    expected.append(description.value_default)
+                self.assertEqual(description.options, expected)
                 states = translations[description.translation_key]["state"]
                 self.assertEqual(set(states), set(description.options))
 
