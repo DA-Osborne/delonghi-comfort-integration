@@ -23,6 +23,13 @@ _LOGGER = logging.getLogger(__name__)
 CORE_PROPERTIES = ("get_device_status", "get_device_mode")
 
 
+# myEcoReal Feel is device mode 5. A model has it if it reports the comfort
+# light colour and the Real Feel offset.
+REAL_FEEL_PROPERTIES = ("real_feel_colour", "get_real_feel_offset", "set_device_mode")
+REAL_FEEL_MODE = 5
+SWING_PROPERTIES = ("get_swing_function", "set_swing_function")
+
+
 class SupportsRequirements(Protocol):
     """An entity description that declares the properties it needs."""
 
@@ -33,6 +40,16 @@ class SupportsRequirements(Protocol):
 def supports(available: Collection[str], required: Iterable[str]) -> bool:
     """Return whether every required property is reported by the device."""
     return all(name in available for name in required)
+
+
+def supports_real_feel(available: Collection[str]) -> bool:
+    """Return whether the device has the myEcoReal Feel mode."""
+    return supports(available, REAL_FEEL_PROPERTIES)
+
+
+def supports_swing(available: Collection[str]) -> bool:
+    """Return whether the device has a controllable vent swing."""
+    return supports(available, SWING_PROPERTIES)
 
 
 def is_complete_snapshot(available: Collection[str]) -> bool:

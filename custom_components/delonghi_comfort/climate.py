@@ -4,6 +4,8 @@ import logging
 from typing import Any
 
 from homeassistant.components.climate import (
+    SWING_OFF,
+    SWING_ON,
     ClimateEntity,
     ClimateEntityFeature,
     HVACMode,
@@ -15,6 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeLonghiConfigEntry
+from .capabilities import REAL_FEEL_MODE, supports_real_feel, supports_swing
 from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,6 +30,10 @@ DEVICE_MODE_TO_HVAC = {
 }
 
 HVAC_MODE_TO_DEVICE = {v: k for k, v in DEVICE_MODE_TO_HVAC.items()}
+
+# myEcoReal Feel holds a comfort level instead of a target temperature, which is
+# what Home Assistant calls auto. Only models that report it get this mode.
+REAL_FEEL_HVAC_MODE = HVACMode.AUTO
 
 
 async def async_setup_entry(
@@ -66,6 +73,20 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
         # Entity information
         self._attr_unique_id = f"delonghi_comfort_{self._dsn}"
 
+        available = coordinator.available_properties
+        self._mode_to_hvac = dict(DEVICE_MODE_TO_HVAC)
+        self._hvac_to_mode = dict(HVAC_MODE_TO_DEVICE)
+        self._attr_hvac_modes = [
+            HVACMode.OFF,
+            HVACMode.COOL,
+            HVACMode.DRY,
+            HVACMode.FAN_ONLY,
+        ]
+        if supports_real_feel(available):
+            self._mode_to_hvac[REAL_FEEL_MODE] = REAL_FEEL_HVAC_MODE
+            self._hvac_to_mode[REAL_FEEL_HVAC_MODE] = REAL_FEEL_MODE
+            self._attr_hvac_modes.append(REAL_FEEL_HVAC_MODE)
+
         # Climate features
         self._attr_supported_features = (
             ClimateEntityFeature.TARGET_TEMPERATURE
@@ -73,13 +94,9 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
             | ClimateEntityFeature.TURN_ON
             | ClimateEntityFeature.TURN_OFF
         )
-
-        self._attr_hvac_modes = [
-            HVACMode.OFF,
-            HVACMode.COOL,
-            HVACMode.DRY,
-            HVACMode.FAN_ONLY,
-        ]
+        if supports_swing(available):
+            self._attr_supported_features |= ClimateEntityFeature.SWING_MODE
+            self._attr_swing_modes = [SWING_OFF, SWING_ON]
 
         # Fan modes - you can adjust these based on your device's capabilities
         self._attr_fan_modes = ["auto", "low", "medium", "high"]
@@ -111,6 +128,10 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
             return HVACAction.DRYING
         elif device_mode == 3:  # Fan
             return HVACAction.FAN
+        elif device_mode == REAL_FEEL_MODE:
+            # The unit modulates compressor and fan itself, so what it is doing
+            # at any moment is not reported.
+            return None
 
         return HVACAction.IDLE
 
@@ -125,7 +146,7 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
         return self.coordinator.data.get("temp_setpoint")
 
     @property
-    def hvac_mode(self) -> HVACMode:
+    def hvac_mode(self) -> HVACMode | None:
         """Return current operation mode."""
         # Check if device is on/off first
         status = self.coordinator.data.get("get_device_status")
@@ -134,7 +155,9 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
 
         # Get device mode
         device_mode = self.coordinator.data.get("get_device_mode")
-        return DEVICE_MODE_TO_HVAC.get(device_mode, HVACMode.OFF)
+        # A mode this integration does not know (the unit shows a sun icon for
+        # heat on models without a heater) is reported as unknown, not as off.
+        return self._mode_to_hvac.get(device_mode)
 
     @property
     def current_humidity(self) -> int | None:
@@ -182,11 +205,32 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
                 self.coordinator.set_optimistic_value("get_device_status", 1)
 
             # Set the mode
-            device_mode = HVAC_MODE_TO_DEVICE.get(hvac_mode)
+            device_mode = self._hvac_to_mode.get(hvac_mode)
             if device_mode and await self._api.set_device_mode(self._dsn, device_mode):
                 self.coordinator.set_optimistic_value("get_device_mode", device_mode)
             else:
                 _LOGGER.error("Failed to set HVAC mode")
+
+    @property
+    def swing_mode(self) -> str | None:
+        """Return whether the vent flap is swinging."""
+        value = self.coordinator.data.get("get_swing_function")
+        if value is None:
+            return None
+        return SWING_ON if value == 1 else SWING_OFF
+
+    async def async_set_swing_mode(self, swing_mode: str) -> None:
+        """Start or stop the vent swing."""
+        if swing_mode not in (SWING_ON, SWING_OFF):
+            _LOGGER.error("Invalid swing mode: %s", swing_mode)
+            return
+
+        # The cloud rejects a JSON true, so send the numbers 1 and 0.
+        value = 1 if swing_mode == SWING_ON else 0
+        if await self._api.set_device_property(self._dsn, "set_swing_function", value):
+            self.coordinator.set_optimistic_value("get_swing_function", value)
+        else:
+            _LOGGER.error("Failed to set swing mode to %s", swing_mode)
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""

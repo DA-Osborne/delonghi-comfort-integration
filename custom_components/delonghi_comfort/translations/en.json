@@ -71,7 +71,8 @@
         "state": {
           "cooling": "Cooling",
           "dehumidification": "Dehumidification",
-          "fan_only": "Fan only"
+          "fan_only": "Fan only",
+          "real_feel": "myEcoReal Feel"
         }
       },
       "fan_speed": {
@@ -126,7 +127,8 @@
         "state": {
           "cooling": "Cooling",
           "dehumidification": "Dehumidification",
-          "fan_only": "Fan only"
+          "fan_only": "Fan only",
+          "real_feel": "myEcoReal Feel"
         }
       }
     },

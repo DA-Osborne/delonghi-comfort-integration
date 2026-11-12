@@ -10,7 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeLonghiConfigEntry
-from .capabilities import async_supported_descriptions
+from .capabilities import REAL_FEEL_MODE, async_supported_descriptions, supports_real_feel
 from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -20,6 +20,10 @@ class DeLonghiSelectDescription(SelectEntityDescription):
     """Select description with the device properties it needs."""
 
     required_properties: tuple[str, ...]
+
+
+MODE_OPTIONS = {1: "cooling", 2: "dehumidification", 3: "fan_only"}
+REAL_FEEL_OPTION = "real_feel"
 
 
 SELECT_DESCRIPTIONS = (
@@ -81,6 +85,10 @@ class DeLonghiSelect(DeLonghiEntity, SelectEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.dsn}_{description.key}"
+        self._mode_map = dict(MODE_OPTIONS)
+        if supports_real_feel(coordinator.available_properties):
+            self._mode_map[REAL_FEEL_MODE] = REAL_FEEL_OPTION
+        self._attr_options = list(self._mode_map.values())
 
     @property
     def current_option(self) -> str | None:
@@ -90,14 +98,14 @@ class DeLonghiSelect(DeLonghiEntity, SelectEntity):
         if value is None:
             return None
 
-        # Convert device mode value to option
-        mode_map = {1: "cooling", 2: "dehumidification", 3: "fan_only"}
-        return mode_map.get(value)
+        # Convert device mode value to option. A mode this model does not offer
+        # (or one we do not know) shows as unknown.
+        return self._mode_map.get(value)
 
     async def async_select_option(self, option: str) -> None:
         """Select an option."""
         # Convert option to device mode value
-        option_map = {"cooling": 1, "dehumidification": 2, "fan_only": 3}
+        option_map = {name: value for value, name in self._mode_map.items()}
 
         device_mode = option_map.get(option)
         if device_mode is None:

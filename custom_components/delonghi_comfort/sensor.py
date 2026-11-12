@@ -40,7 +40,7 @@ class DeLonghiSensorDescription(SensorEntityDescription):
 
 
 STATUS_STATES = {1: "on", 2: "off"}
-MODE_STATES = {1: "cooling", 2: "dehumidification", 3: "fan_only"}
+MODE_STATES = {1: "cooling", 2: "dehumidification", 3: "fan_only", 5: "real_feel"}
 FAN_SPEED_STATES = {1: "low", 2: "medium", 3: "high", 4: "auto"}
 SILENT_STATES = {0: "off", 1: "on"}
 
