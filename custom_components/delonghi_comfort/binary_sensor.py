@@ -62,9 +62,13 @@ BINARY_SENSOR_DESCRIPTIONS = (
         translation_key="timer_active",
     ),
     DeLonghiBinarySensorDescription(
+        # Reads 1 once the schedule is armed and falls to 0 when a slot starts
+        # running, so it is not a reliable "schedule on" indicator. It is off by
+        # default; the Weekly schedule sensor shows what is stored.
         key="get_weeklysched_enable",
         required_properties=("get_weeklysched_enable",),
         translation_key="weekly_schedule",
+        entity_registry_enabled_default=False,
     ),
     # Alarms shown on the unit's display (HL, PF, LH, LT). A value of 1 is
     # assumed to mean active; none has been triggered on the reference unit.

@@ -128,6 +128,71 @@ class SensorTests(TestCase):
             {d.key for d in unsupported}, {"hl_alarm", "pf_alarm", "pairing_status"}
         )
 
+    # ---- weekly schedule --------------------------------------------------
+    def _schedule_sensor(self, **data):
+        return self._sensor("weekly_schedule", **data)
+
+    def test_schedule_sensor_decodes_what_the_app_uploaded(self) -> None:
+        upload = json.loads(
+            (_FIXTURES / "schedule_app_upload.json").read_text(encoding="utf-8")
+        )
+        entity = self._schedule_sensor(
+            weeklyschedule_calendar=upload["calendar"],
+            weeklyschedule_setpoints=upload["setpoints"],
+        )
+        # 12 one-hour entries on Tuesday plus the two midnight neighbours.
+        self.assertEqual(entity.native_value, 14)
+        first = entity.extra_state_attributes["schedules"][0]
+        self.assertEqual(
+            first,
+            {
+                "days": ["Tue"], "start": "01:00", "end": "02:00", "mode": "cool",
+                "swing": False, "silent": False, "temperature": 24, "fan": "low",
+            },
+        )
+
+    def test_schedule_sensor_with_nothing_stored(self) -> None:
+        for calendar, setpoints in (("", ""), (None, None), ("A" * 672, "A" * 64)):
+            with self.subTest(calendar=calendar):
+                entity = self._schedule_sensor(
+                    weeklyschedule_calendar=calendar, weeklyschedule_setpoints=setpoints
+                )
+                self.assertEqual(entity.native_value, 0)
+                self.assertEqual(entity.extra_state_attributes, {"schedules": []})
+
+    def test_schedule_sensor_survives_garbage(self) -> None:
+        entity = self._schedule_sensor(
+            weeklyschedule_calendar="short", weeklyschedule_setpoints="A" * 64
+        )
+        self.assertIsNone(entity.native_value)
+        self.assertIn("error", entity.extra_state_attributes)
+
+    def test_schedule_sensor_needs_both_strings(self) -> None:
+        self.assertFalse(self._schedule_sensor(weeklyschedule_calendar="A" * 672).available)
+        self.assertTrue(
+            self._schedule_sensor(
+                weeklyschedule_calendar="A" * 672, weeklyschedule_setpoints="A" * 64
+            ).available
+        )
+
+    def test_schedule_sensor_is_in_the_el112_set_and_skipped_without_the_strings(self) -> None:
+        from custom_components.delonghi_comfort.capabilities import split_supported
+
+        supported, _ = split_supported(AC, self.sensor.SENSOR_DESCRIPTIONS)
+        self.assertIn("weekly_schedule", {d.key for d in supported})
+        supported, _ = split_supported(
+            AC - {"weeklyschedule_setpoints"}, self.sensor.SENSOR_DESCRIPTIONS
+        )
+        self.assertNotIn("weekly_schedule", {d.key for d in supported})
+
+    def test_the_misleading_armed_flag_is_off_by_default(self) -> None:
+        description = next(
+            d for d in self.binary.BINARY_SENSOR_DESCRIPTIONS
+            if d.key == "get_weeklysched_enable"
+        )
+        self.assertFalse(description.entity_registry_enabled_default)
+        self.assertEqual(TRANSLATIONS["binary_sensor"]["weekly_schedule"]["name"], "Weekly schedule armed")
+
     # ---- plumbing ---------------------------------------------------------
     def test_every_new_entity_has_a_translated_name(self) -> None:
         for description in self.binary.BINARY_SENSOR_DESCRIPTIONS:

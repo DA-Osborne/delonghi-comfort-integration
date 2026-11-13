@@ -164,6 +164,7 @@ class PlatformGatingTests(TestCase):
                 "remote_temp",
                 "remote_hum",
                 "real_feel_colour",
+                "weekly_schedule",
             },
         )
         self.assertEqual(

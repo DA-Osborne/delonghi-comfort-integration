@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
 import logging
 from typing import Any
 
@@ -27,14 +28,43 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from . import DeLonghiConfigEntry
 from .capabilities import async_supported_descriptions
 from .entity import DeLonghiEntity
+from .schedule import ScheduleBlock, ScheduleError, decode_schedule, group_blocks
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _schedule_blocks(data: dict[str, Any]) -> list[ScheduleBlock]:
+    """Decode the schedule the unit holds. An empty schedule has no blocks."""
+    calendar = data.get("weeklyschedule_calendar")
+    setpoints = data.get("weeklyschedule_setpoints")
+    if not calendar or not setpoints:
+        return []
+    return decode_schedule(str(calendar), str(setpoints))
+
+
+def _schedule_count(data: dict[str, Any]) -> int | None:
+    """Number of schedules (a schedule on several days counts once)."""
+    try:
+        return len(group_blocks(_schedule_blocks(data)))
+    except ScheduleError:
+        return None
+
+
+def _schedule_attributes(data: dict[str, Any]) -> dict[str, Any]:
+    try:
+        return {"schedules": group_blocks(_schedule_blocks(data))}
+    except ScheduleError as err:
+        return {"error": str(err)}
+
 
 @dataclass(frozen=True, kw_only=True)
 class DeLonghiSensorDescription(SensorEntityDescription):
     """Sensor description with the device properties it needs."""
 
     required_properties: tuple[str, ...]
+    # Sensors whose value is worked out from several properties supply these.
+    value_fn: Callable[[dict[str, Any]], Any] | None = None
+    attributes_fn: Callable[[dict[str, Any]], dict[str, Any]] | None = None
     # Maps raw device values to translated state names for enum sensors.
     value_map: dict[Any, str] | None = None
     # State for raw values missing from value_map. When set, the raw value is
@@ -110,6 +140,15 @@ SENSOR_DESCRIPTIONS = (
         options=[*REAL_FEEL_COMFORT_STATES.values(), REAL_FEEL_OTHER_STATE],
         value_map=REAL_FEEL_COMFORT_STATES,
         value_default=REAL_FEEL_OTHER_STATE,
+    ),
+    DeLonghiSensorDescription(
+        # What the unit has stored as its weekly schedule, decoded. Read only.
+        key="weekly_schedule",
+        required_properties=("weeklyschedule_calendar", "weeklyschedule_setpoints"),
+        translation_key="weekly_schedule_contents",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        value_fn=_schedule_count,
+        attributes_fn=_schedule_attributes,
     ),
     DeLonghiSensorDescription(
         key="get_device_status",
@@ -271,6 +310,9 @@ class DeLonghiSensor(DeLonghiEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         """Return the value of the sensor."""
+        if self.entity_description.value_fn is not None:
+            return self.entity_description.value_fn(self.coordinator.data)
+
         value = self.coordinator.data.get(self.entity_description.key)
 
         if value is None:
@@ -287,7 +329,9 @@ class DeLonghiSensor(DeLonghiEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict[str, Any] | None:
-        """Expose the raw code for sensors that map unknown codes to a default."""
+        """Expose extra detail: decoded schedules, or the raw code for enum sensors."""
+        if self.entity_description.attributes_fn is not None:
+            return self.entity_description.attributes_fn(self.coordinator.data)
         if self.entity_description.value_default is None:
             return None
         return {"raw_value": self.coordinator.data.get(self.entity_description.key)}
@@ -296,7 +340,11 @@ class DeLonghiSensor(DeLonghiEntity, SensorEntity):
     def available(self) -> bool:
         """Return if entity is available."""
         if not (
-            super().available and self.entity_description.key in self.coordinator.data
+            super().available
+            and all(
+                name in self.coordinator.data
+                for name in self.entity_description.required_properties
+            )
         ):
             return False
         if (
