@@ -133,6 +133,12 @@
       },
       "humidity_setpoint": {
         "name": "Humidity setpoint"
+      },
+      "real_feel_adjustment": {
+        "name": "myEcoReal Feel adjustment"
+      },
+      "off_timer": {
+        "name": "Off timer"
       }
     },
     "select": {

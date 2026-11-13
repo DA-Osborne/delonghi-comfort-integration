@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 import logging
+from typing import Any
 
 from homeassistant.components.number import (
     NumberDeviceClass,
@@ -11,8 +13,9 @@ from homeassistant.components.number import (
     NumberEntityDescription,
     NumberMode,
 )
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.const import PERCENTAGE, UnitOfTemperature, UnitOfTime
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeLonghiConfigEntry
@@ -21,11 +24,83 @@ from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
 
+# The unit applies a Real Feel adjustment from 14 to 18 (default 16) and ignores
+# anything else, so that is the range offered. A higher number is warmer.
+REAL_FEEL_MIN = 14
+REAL_FEEL_MAX = 18
+# The remote's own timer goes up to 24 hours; the same limit is used here.
+OFF_TIMER_MAX_MINUTES = 1440
+
+
+def _as_number(value: Any) -> float | None:
+    """Return a property value as a number, or None if it is empty or not numeric."""
+    if isinstance(value, bool):
+        return float(value)
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _real_feel_value(data: dict[str, Any]) -> float | None:
+    return _as_number(data.get("get_real_feel_offset"))
+
+
+def _off_timer_value(data: dict[str, Any]) -> float | None:
+    """Minutes the timer was set to, or 0 when no timer is running.
+
+    The unit keeps the last duration after a timer ends, so the duration alone
+    cannot say whether one is active.
+    """
+    if _as_number(data.get("get_timer_enabled")) != 1:
+        return 0
+    return _as_number(data.get("onofftimer_minutes")) or 0
+
+
+async def _set_real_feel(coordinator, value: float) -> bool:
+    adjustment = int(value)
+    # The cloud rejects a JSON true, so numbers are sent as integers.
+    if not await coordinator.api.set_device_property(
+        coordinator.dsn, "set_real_feel_offset", adjustment
+    ):
+        return False
+    coordinator.set_optimistic_value("get_real_feel_offset", adjustment)
+    return True
+
+
+async def _set_off_timer(coordinator, value: float) -> bool:
+    """Start the cloud off timer for the given minutes, or cancel it with 0."""
+    minutes = int(value)
+    api, dsn = coordinator.api, coordinator.dsn
+    if minutes > 0:
+        # The app writes the duration, then starts the timer.
+        if not await api.set_device_property(dsn, "onofftimer_minutes", minutes):
+            return False
+        if not await api.set_device_property(dsn, "set_timer_enabled", 1):
+            return False
+        coordinator.set_optimistic_value("onofftimer_minutes", minutes)
+        coordinator.set_optimistic_value("get_timer_enabled", 1)
+        return True
+
+    # Cancelling writes zero to both, as the app does.
+    if not await api.set_device_property(dsn, "set_timer_enabled", 0):
+        return False
+    if not await api.set_device_property(dsn, "onofftimer_minutes", 0):
+        return False
+    coordinator.set_optimistic_value("get_timer_enabled", 0)
+    return True
+
+
 @dataclass(frozen=True, kw_only=True)
 class DeLonghiNumberDescription(NumberEntityDescription):
     """Number description with the device properties it needs."""
 
     required_properties: tuple[str, ...]
+    # How to turn the device data into the displayed value and how to write a new
+    # one. Descriptions that leave these empty read the property named by `key`
+    # and use the original setpoint writers.
+    value_fn: Callable[[dict[str, Any]], float | None] | None = None
+    set_fn: Callable[[Any, float], Awaitable[bool]] | None = None
 
 
 NUMBER_DESCRIPTIONS = (
@@ -36,7 +111,7 @@ NUMBER_DESCRIPTIONS = (
         entity_registry_enabled_default=False,
         device_class=NumberDeviceClass.TEMPERATURE,
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
-        native_min_value=16,
+        native_min_value=18,
         native_max_value=32,
         native_step=1,
         mode=NumberMode.BOX,
@@ -51,6 +126,35 @@ NUMBER_DESCRIPTIONS = (
         native_max_value=80,
         native_step=5,
         mode=NumberMode.BOX,
+    ),
+    DeLonghiNumberDescription(
+        key="get_real_feel_offset",
+        required_properties=("get_real_feel_offset", "set_real_feel_offset"),
+        translation_key="real_feel_adjustment",
+        entity_category=EntityCategory.CONFIG,
+        native_min_value=REAL_FEEL_MIN,
+        native_max_value=REAL_FEEL_MAX,
+        native_step=1,
+        mode=NumberMode.SLIDER,
+        value_fn=_real_feel_value,
+        set_fn=_set_real_feel,
+    ),
+    DeLonghiNumberDescription(
+        key="off_timer",
+        required_properties=(
+            "onofftimer_minutes",
+            "set_timer_enabled",
+            "get_timer_enabled",
+        ),
+        translation_key="off_timer",
+        device_class=NumberDeviceClass.DURATION,
+        native_unit_of_measurement=UnitOfTime.MINUTES,
+        native_min_value=0,
+        native_max_value=OFF_TIMER_MAX_MINUTES,
+        native_step=1,
+        mode=NumberMode.BOX,
+        value_fn=_off_timer_value,
+        set_fn=_set_off_timer,
     ),
 )
 
@@ -103,29 +207,38 @@ class DeLonghiNumber(DeLonghiEntity, NumberEntity):
     @property
     def native_value(self) -> float | None:
         """Return the current value."""
-        return self.coordinator.data.get(self.entity_description.key)
+        description = self.entity_description
+        if description.value_fn is not None:
+            return description.value_fn(self.coordinator.data)
+        return self.coordinator.data.get(description.key)
 
     async def async_set_native_value(self, value: float) -> None:
         """Set the value."""
-        if self.entity_description.key == "temp_setpoint":
+        description = self.entity_description
+        if description.set_fn is not None:
+            success = await description.set_fn(self.coordinator, value)
+        elif description.key == "temp_setpoint":
             success = await self.coordinator.api.set_temperature_setpoint(
                 self.coordinator.dsn, value
             )
-        elif self.entity_description.key == "humidity_setpoint":
+            if success:
+                await self.coordinator.async_request_refresh()
+        elif description.key == "humidity_setpoint":
             success = await self.coordinator.api.set_humidity_setpoint(
                 self.coordinator.dsn, value
             )
+            if success:
+                await self.coordinator.async_request_refresh()
         else:
             success = False
 
-        if success:
-            await self.coordinator.async_request_refresh()
-        else:
-            _LOGGER.error("Failed to set %s to %s", self.entity_description.key, value)
+        if not success:
+            _LOGGER.error("Failed to set %s to %s", description.key, value)
 
     @property
     def available(self) -> bool:
-        """Return if entity is available."""
-        return (
-            super().available and self.entity_description.key in self.coordinator.data
+        """Return if the device reports every property this number needs."""
+        return super().available and all(
+            name in self.coordinator.data
+            for name in self.entity_description.required_properties
         )
