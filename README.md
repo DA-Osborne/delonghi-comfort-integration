@@ -45,15 +45,24 @@ This integration builds on work from:
 - **Remote Control**: Temperature and humidity measured by the CST remote, plus whether it is connected, docked and being used
 - **myEcoReal Feel Comfort**: The comfort light colour (inactive, perfect, or not optimal)
 - **Alarms**: Tray full, probe failure, low humidity, frost protection and high temperature
-- **Timer and Schedule**: Whether the timer or weekly schedule is active
+- **Timer**: Whether the app's Off timer is running
+- **Weekly Schedule**: The schedule stored on the unit, decoded into days, times and settings (read only). It shows what the unit will run, which can differ from what the app displays
 
 ### Controls
 - **Power Switch**: Turn device on/off
 - **Temperature Controls**: Precise temperature adjustment
 - **Mode Selection**: Easy switching between operating modes
 - **Fan Speed Selection**: Control fan speed levels
+- **myEcoReal Feel Adjustment**: The comfort adjustment the app changes when you answer "do you feel comfortable?". Range 14 to 18 with 16 as the default; a higher number is warmer
+- **Off Timer**: Minutes until the unit switches itself off; 0 cancels. This is the same timer the app calls the Off timer. It shows the duration you set, not the time left, because the unit does not report the time left. It is separate from the timer on the remote control
+- **Display Temperature Unit**: Whether the unit's own display shows °C or °F. Temperatures in Home Assistant stay in your Home Assistant unit system
 
 Entities are created only for the properties your model reports, so a model without a given feature does not get an empty entity for it. Entities that repeat the climate entity (target temperature, status, mode, fan speed, silent mode sensors, the power switch and the temperature number) are disabled by default on new installs.
+
+### Known limits
+- **Weekly schedule is read only.** The unit runs a schedule written outside the app, and the format is understood, but Home Assistant does not write schedules yet. In testing the unit applied a schedule's mode, fan speed and swing, but not its temperature or silent setting. Once the schedule is armed, the unit also switches itself off outside the scheduled times. If you use the app's schedule screen, the app keeps its own copy and overwrites what is on the unit.
+- **Only the properties your model reports are used.** This was developed against one air conditioner (appliance model EL112). Other models may report different properties; entities appear only where the model supplies them. Reports from other models are welcome.
+- **The heater support is unchanged and untested** against current heaters.
 
 ### Advanced Features
 - **Configuration Flow**: Easy setup through Home Assistant UI
