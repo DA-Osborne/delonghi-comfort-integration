@@ -162,3 +162,48 @@ class ClimateRealFeelTests(IsolatedAsyncioTestCase):
         entity, coordinator = self._select(BASIC)
         await entity.async_select_option("real_feel")
         coordinator.api.set_device_mode.assert_not_awaited()
+
+    # ---- display temperature unit -------------------------------------------
+    def _unit_select(self, available=AC, **data):
+        coordinator = _coordinator(available, data)
+        description = next(
+            d for d in self.select.SELECT_DESCRIPTIONS if d.key == "get_temp_unit"
+        )
+        return self.select.DeLonghiSelect(coordinator, description), coordinator
+
+    def test_unit_select_options_and_state(self) -> None:
+        entity, _ = self._unit_select(get_temp_unit=0)
+        self.assertEqual(entity.options, ["celsius", "fahrenheit"])
+        self.assertEqual(entity.current_option, "celsius")
+        self.assertEqual(self._unit_select(get_temp_unit=1)[0].current_option, "fahrenheit")
+        self.assertIsNone(self._unit_select(get_temp_unit=7)[0].current_option)
+
+    async def test_unit_select_writes_a_number_and_holds_the_value(self) -> None:
+        entity, coordinator = self._unit_select(get_temp_unit=0)
+        await entity.async_select_option("fahrenheit")
+        args = coordinator.api.set_device_property.await_args.args
+        self.assertEqual(args[:2], ("DSN1", "set_temp_unit"))
+        self.assertEqual(args[2], 1)
+        self.assertIs(type(args[2]), int)
+        coordinator.set_optimistic_value.assert_called_once_with("get_temp_unit", 1)
+        # It does not go through the device mode path.
+        coordinator.api.set_device_mode.assert_not_awaited()
+
+    async def test_failed_unit_write_holds_nothing(self) -> None:
+        entity, coordinator = self._unit_select(get_temp_unit=0)
+        coordinator.api.set_device_property = AsyncMock(return_value=False)
+        await entity.async_select_option("fahrenheit")
+        coordinator.set_optimistic_value.assert_not_called()
+
+    def test_unit_select_is_skipped_without_the_properties(self) -> None:
+        from custom_components.delonghi_comfort.capabilities import split_supported
+
+        supported, _ = split_supported(AC - {"set_temp_unit"}, self.select.SELECT_DESCRIPTIONS)
+        self.assertNotIn("get_temp_unit", {d.key for d in supported})
+
+    def test_unit_select_has_translated_name_and_states(self) -> None:
+        tr = json.loads(
+            (_ROOT / "custom_components" / "delonghi_comfort" / "translations" / "en.json")
+            .read_text(encoding="utf-8")
+        )["entity"]["select"]["display_unit"]
+        self.assertEqual(set(tr["state"]), {"celsius", "fahrenheit"})

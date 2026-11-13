@@ -142,6 +142,13 @@
       }
     },
     "select": {
+      "display_unit": {
+        "name": "Display temperature unit",
+        "state": {
+          "celsius": "°C",
+          "fahrenheit": "°F"
+        }
+      },
       "device_mode": {
         "name": "Mode",
         "state": {

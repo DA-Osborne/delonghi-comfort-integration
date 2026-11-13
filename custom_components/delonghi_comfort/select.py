@@ -7,6 +7,7 @@ import logging
 
 from homeassistant.components.select import SelectEntity, SelectEntityDescription
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeLonghiConfigEntry
@@ -20,10 +21,17 @@ class DeLonghiSelectDescription(SelectEntityDescription):
     """Select description with the device properties it needs."""
 
     required_properties: tuple[str, ...]
+    # For selects that map a plain device value to an option name. The device
+    # mode select leaves these empty because its options depend on the model.
+    value_map: dict[int, str] | None = None
+    set_property: str | None = None
 
 
 MODE_OPTIONS = {1: "cooling", 2: "dehumidification", 3: "fan_only"}
 REAL_FEEL_OPTION = "real_feel"
+# The unit's display shows Celsius or Fahrenheit. Temperatures sent to the cloud
+# stay in Celsius whichever is shown.
+DISPLAY_UNIT_OPTIONS = {0: "celsius", 1: "fahrenheit"}
 
 
 SELECT_DESCRIPTIONS = (
@@ -32,6 +40,15 @@ SELECT_DESCRIPTIONS = (
         required_properties=("get_device_mode", "set_device_mode"),
         translation_key="device_mode",
         options=["cooling", "dehumidification", "fan_only"],
+    ),
+    DeLonghiSelectDescription(
+        key="get_temp_unit",
+        required_properties=("get_temp_unit", "set_temp_unit"),
+        translation_key="display_unit",
+        entity_category=EntityCategory.CONFIG,
+        options=list(DISPLAY_UNIT_OPTIONS.values()),
+        value_map=DISPLAY_UNIT_OPTIONS,
+        set_property="set_temp_unit",
     ),
 )
 
@@ -85,9 +102,12 @@ class DeLonghiSelect(DeLonghiEntity, SelectEntity):
         super().__init__(coordinator)
         self.entity_description = description
         self._attr_unique_id = f"{coordinator.dsn}_{description.key}"
-        self._mode_map = dict(MODE_OPTIONS)
-        if supports_real_feel(coordinator.available_properties):
-            self._mode_map[REAL_FEEL_MODE] = REAL_FEEL_OPTION
+        if description.value_map is not None:
+            self._mode_map = dict(description.value_map)
+        else:
+            self._mode_map = dict(MODE_OPTIONS)
+            if supports_real_feel(coordinator.available_properties):
+                self._mode_map[REAL_FEEL_MODE] = REAL_FEEL_OPTION
         self._attr_options = list(self._mode_map.values())
 
     @property
@@ -98,22 +118,37 @@ class DeLonghiSelect(DeLonghiEntity, SelectEntity):
         if value is None:
             return None
 
-        # Convert device mode value to option. A mode this model does not offer
+        # Convert the device value to an option. A value this model does not offer
         # (or one we do not know) shows as unknown.
         return self._mode_map.get(value)
 
     async def async_select_option(self, option: str) -> None:
         """Select an option."""
-        # Convert option to device mode value
+        # Convert option to device value
         option_map = {name: value for value, name in self._mode_map.items()}
 
-        device_mode = option_map.get(option)
-        if device_mode is None:
+        device_value = option_map.get(option)
+        if device_value is None:
             _LOGGER.error("Unknown option: %s", option)
             return
 
+        if self.entity_description.set_property is not None:
+            # Send the number, as the cloud rejects a JSON true.
+            success = await self.coordinator.api.set_device_property(
+                self.coordinator.dsn, self.entity_description.set_property, device_value
+            )
+            if success:
+                self.coordinator.set_optimistic_value(
+                    self.entity_description.key, device_value
+                )
+            else:
+                _LOGGER.error(
+                    "Failed to set %s to %s", self.entity_description.key, option
+                )
+            return
+
         success = await self.coordinator.api.set_device_mode(
-            self.coordinator.dsn, device_mode
+            self.coordinator.dsn, device_value
         )
 
         if success:

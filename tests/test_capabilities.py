@@ -171,7 +171,8 @@ class PlatformGatingTests(TestCase):
             {"temp_setpoint", "get_real_feel_offset", "off_timer"}
         )
         self.assertEqual(
-            self._keys(self.select.SELECT_DESCRIPTIONS, AC), {"get_device_mode"}
+            self._keys(self.select.SELECT_DESCRIPTIONS, AC),
+            {"get_device_mode", "get_temp_unit"},
         )
         self.assertEqual(
             self._keys(self.switch.SWITCH_DESCRIPTIONS, AC),
