@@ -21,6 +21,8 @@ _LOGGER = logging.getLogger(__name__)
 # A property list without these is treated as incomplete (for example a partial
 # cloud response), so nothing is removed from the entity registry because of it.
 CORE_PROPERTIES = ("get_device_status", "get_device_mode")
+# The heater reports its state under different names.
+HEATER_CORE_PROPERTIES = ("device_status", "device_mode")
 
 
 # myEcoReal Feel is device mode 5. A model has it if it reports the comfort
@@ -54,7 +56,9 @@ def supports_swing(available: Collection[str]) -> bool:
 
 def is_complete_snapshot(available: Collection[str]) -> bool:
     """Return whether the property list looks like a full device response."""
-    return supports(available, CORE_PROPERTIES)
+    return supports(available, CORE_PROPERTIES) or supports(
+        available, HEATER_CORE_PROPERTIES
+    )
 
 
 def split_supported(
@@ -77,6 +81,7 @@ def async_supported_descriptions(
     dsn: str,
     available: Collection[str],
     descriptions: Iterable[SupportsRequirements],
+    unique_id_format: str = "{dsn}_{key}",
 ) -> list[Any]:
     """Return the descriptions a device supports.
 
@@ -100,7 +105,9 @@ def async_supported_descriptions(
     registry = er.async_get(hass)
     for description in unsupported:
         entity_id = registry.async_get_entity_id(
-            platform, DOMAIN, f"{dsn}_{description.key}"
+            platform,
+            DOMAIN,
+            unique_id_format.format(dsn=dsn, key=description.key),
         )
         if entity_id is not None:
             _LOGGER.info(

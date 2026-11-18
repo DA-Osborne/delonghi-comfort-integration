@@ -11,7 +11,12 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeLonghiConfigEntry
-from .capabilities import REAL_FEEL_MODE, async_supported_descriptions, supports_real_feel
+from .capabilities import (
+    REAL_FEEL_MODE,
+    async_supported_descriptions,
+    supports,
+    supports_real_feel,
+)
 from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -83,6 +88,9 @@ async def async_setup_entry(
     entities.extend(
         HeaterBrightness(coordinator=coordinator)
         for coordinator in config_entry.runtime_data.heater_coordinators
+        if supports(
+            coordinator.available_properties, ("current_brightness", "set_brightness")
+        )
     )
 
     async_add_entities(entities)
@@ -178,14 +186,20 @@ class HeaterBrightness(DeLonghiEntity, SelectEntity):
     @property
     def current_option(self) -> str | None:
         """Return the current option."""
-        value = self.coordinator.data.get(f"current_brightness")
-        return None if value is None else self.options[value - 1]
+        value = self.coordinator.data.get("current_brightness")
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return None
+        index = int(value) - 1
+        return self.options[index] if 0 <= index < len(self.options) else None
 
     async def async_select_option(self, option: str) -> None:
         """Select an option."""
+        if option not in self.options:
+            _LOGGER.error("Unknown brightness: %s", option)
+            return
         value = self.options.index(option) + 1
         success = await self.coordinator.api.set_device_property(
-            self.coordinator.dsn, f"set_brightness", value
+            self.coordinator.dsn, "set_brightness", value
         )
 
         if success:

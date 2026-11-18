@@ -287,6 +287,7 @@ async def async_setup_entry(
     entities.extend(
         HeaterTemperature(coordinator=coordinator)
         for coordinator in config_entry.runtime_data.heater_coordinators
+        if "room_temp" in coordinator.available_properties
     )
 
     async_add_entities(entities)

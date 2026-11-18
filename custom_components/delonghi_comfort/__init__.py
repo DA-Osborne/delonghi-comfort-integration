@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import TypeAlias
 
 import aiohttp
@@ -21,6 +22,8 @@ from .const import (
 from .api import DeLonghiAPI, DeLonghiAPIError, DeLonghiAuthenticationError
 from .coordinator import DeLonghiCoordinator
 
+_LOGGER = logging.getLogger(__name__)
+
 
 @dataclass(slots=True)
 class DeLonghiRuntimeData:
@@ -32,6 +35,11 @@ class DeLonghiRuntimeData:
 
 
 DeLonghiConfigEntry: TypeAlias = ConfigEntry[DeLonghiRuntimeData]
+
+
+def is_heater(device_info: dict) -> bool:
+    """Return whether a cloud device record describes a heater, not an air conditioner."""
+    return device_info.get("oem_model") == "DL-heater"
 
 
 PLATFORMS: list[Platform] = [
@@ -73,15 +81,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: DeLonghiConfigEntry) -> 
     coordinators = []
     heater_coordinators = []
     for device in devices:
-        device_info = device["device"]
+        device_info = device.get("device") if isinstance(device, dict) else None
+        if not isinstance(device_info, dict) or not device_info.get("dsn"):
+            _LOGGER.warning("Skipping a device record without a serial number")
+            continue
         dsn = device_info["dsn"]
 
         coordinator = DeLonghiCoordinator(hass, api, dsn, device_info, entry)
         await coordinator.async_config_entry_first_refresh()
-        if device_info["oem_model"] == "DL-heater":
+        if is_heater(device_info):
             heater_coordinators.append(coordinator)
         else:
             coordinators.append(coordinator)
+
+    if not coordinators and not heater_coordinators:
+        raise ConfigEntryNotReady("No usable De'Longhi devices returned")
 
     entry.runtime_data = DeLonghiRuntimeData(
         api=api,

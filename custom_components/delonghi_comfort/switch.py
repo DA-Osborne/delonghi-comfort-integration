@@ -38,13 +38,15 @@ SWITCH_DESCRIPTIONS = (
 )
 
 HEATER_DESCRIPTIONS = (
-    SwitchEntityDescription(
+    DeLonghiSwitchDescription(
         key="eco",
+        required_properties=("get_eco", "set_eco"),
         icon="mdi:sprout",
         name="Eco",
     ),
-    SwitchEntityDescription(
+    DeLonghiSwitchDescription(
         key="lock",
+        required_properties=("get_lock", "set_lock"),
         icon="mdi:lock",
         name="Child lock",
     ),
@@ -84,7 +86,14 @@ async def async_setup_entry(
                     coordinator=coordinator,
                     description=description,
                 )
-                for description in HEATER_DESCRIPTIONS
+                for description in async_supported_descriptions(
+                    hass,
+                    "switch",
+                    coordinator.dsn,
+                    coordinator.available_properties,
+                    HEATER_DESCRIPTIONS,
+                    unique_id_format="delonghi_heater_{dsn}_{key}",
+                )
             ]
         )
 

@@ -31,6 +31,16 @@ DEVICE_MODE_TO_HVAC = {
 
 HVAC_MODE_TO_DEVICE = {v: k for k, v in DEVICE_MODE_TO_HVAC.items()}
 
+
+def _as_index(value: Any) -> int | None:
+    """Return a device value as an integer, or None if it is empty or not numeric."""
+    if isinstance(value, bool):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
 # myEcoReal Feel holds a comfort level instead of a target temperature, which is
 # what Home Assistant calls auto. Only models that report it get this mode.
 REAL_FEEL_HVAC_MODE = HVACMode.AUTO
@@ -295,9 +305,19 @@ class DeLonghiHeater(DeLonghiEntity, ClimateEntity):
         self._attr_unique_id = f"delonghi_heater_{self._dsn}"
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return additional state attributes."""
-        return dict(self.coordinator.data)
+    def extra_state_attributes(self) -> dict[str, Any] | None:
+        """Return the heater values that no other entity shows.
+
+        This used to copy every property the cloud reports into the state, which
+        also exposed the device's network address and serial number.
+        """
+        data = self.coordinator.data
+        attributes = {
+            name: data[name]
+            for name in ("current_power_level", "MDH_Resources")
+            if name in data
+        }
+        return attributes or None
 
     @property
     def hvac_mode(self) -> HVACMode:
@@ -318,8 +338,10 @@ class DeLonghiHeater(DeLonghiEntity, ClimateEntity):
     @property
     def preset_mode(self) -> str | None:
         """Return the current preset mode."""
-        device_mode = self.coordinator.data.get("device_mode")
-        return self.preset_modes[device_mode-1] if 1 <= device_mode <= 4 else None
+        device_mode = _as_index(self.coordinator.data.get("device_mode"))
+        if device_mode is None or not 1 <= device_mode <= len(self.preset_modes):
+            return None
+        return self.preset_modes[device_mode - 1]
 
     @property
     def native_current_temperature(self) -> float | None:
@@ -334,7 +356,9 @@ class DeLonghiHeater(DeLonghiEntity, ClimateEntity):
     @property
     def fan_mode(self) -> str | None:
         """Return the fan mode."""
-        power_level = self.coordinator.data.get("current_power_level", 0)
+        power_level = _as_index(self.coordinator.data.get("current_power_level", 0))
+        if power_level is None or not 0 <= power_level < len(self.fan_modes):
+            return None
         return self.fan_modes[power_level]
 
     async def async_set_hvac_mode(self, hvac_mode: HVACMode) -> None:
@@ -371,6 +395,9 @@ class DeLonghiHeater(DeLonghiEntity, ClimateEntity):
 
     async def async_set_fan_mode(self, fan_mode: str) -> None:
         """Set new target fan mode."""
+        if fan_mode not in self.fan_modes:
+            _LOGGER.error("Invalid fan mode: %s", fan_mode)
+            return
         power_level = self.fan_modes.index(fan_mode)
         if await self._api.set_device_property(self._dsn, "set_power_level", power_level):
             await self.coordinator.async_request_refresh()
