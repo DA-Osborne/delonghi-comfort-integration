@@ -31,6 +31,8 @@ DEVICE_MODE_TO_HVAC = {
 
 HVAC_MODE_TO_DEVICE = {v: k for k, v in DEVICE_MODE_TO_HVAC.items()}
 
+ALL_FAN_MODES = ("auto", "low", "medium", "high")
+
 
 def _as_index(value: Any) -> int | None:
     """Return a device value as an integer, or None if it is empty or not numeric."""
@@ -108,8 +110,6 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
             self._attr_supported_features |= ClimateEntityFeature.SWING_MODE
             self._attr_swing_modes = [SWING_OFF, SWING_ON]
 
-        # Fan modes - you can adjust these based on your device's capabilities
-        self._attr_fan_modes = ["auto", "low", "medium", "high"]
 
         self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_min_temp = 18
@@ -144,6 +144,20 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
             return None
 
         return HVACAction.IDLE
+
+    @property
+    def fan_modes(self) -> list[str]:
+        """Return the fan speeds the unit accepts in its current mode.
+
+        Dehumidify picks its own air flow (the unit reports Auto) and fan mode has no
+        Auto setting.
+        """
+        device_mode = self.coordinator.data.get("get_device_mode")
+        if device_mode == 2:
+            return ["auto"]
+        if device_mode == 3:
+            return ["low", "medium", "high"]
+        return list(ALL_FAN_MODES)
 
     @property
     def native_current_temperature(self) -> float | None:

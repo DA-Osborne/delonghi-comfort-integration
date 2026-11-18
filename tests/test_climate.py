@@ -104,6 +104,22 @@ class ClimateRealFeelTests(IsolatedAsyncioTestCase):
                 self.assertNotIn("current_temperature", vars(cls))
                 self.assertNotIn("target_temperature", vars(cls))
 
+    def test_fan_speeds_offered_depend_on_the_mode(self) -> None:
+        for device_mode, expected in (
+            (1, ["auto", "low", "medium", "high"]),  # cool
+            (2, ["auto"]),  # dehumidify chooses its own air flow
+            (3, ["low", "medium", "high"]),  # fan mode has no auto
+            (5, ["auto", "low", "medium", "high"]),  # Real Feel: not restricted
+            (None, ["auto", "low", "medium", "high"]),
+        ):
+            with self.subTest(device_mode=device_mode):
+                entity, _ = self._entity(get_device_mode=device_mode)
+                self.assertEqual(entity.fan_modes, expected)
+
+    def test_current_fan_mode_is_still_reported_outside_the_offered_list(self) -> None:
+        entity, _ = self._entity(get_device_mode=3, get_int_fan_speed=4)
+        self.assertEqual(entity.fan_mode, "auto")
+
     def test_off_wins_over_mode(self) -> None:
         entity, _ = self._entity(get_device_status=2, get_device_mode=5)
         self.assertEqual(entity.hvac_mode, self.HVACMode.OFF)
