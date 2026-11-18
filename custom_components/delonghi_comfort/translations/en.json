@@ -56,9 +56,6 @@
       "room_humidity": {
         "name": "Room humidity"
       },
-      "target_humidity": {
-        "name": "Target humidity"
-      },
       "device_status": {
         "name": "Device status",
         "state": {

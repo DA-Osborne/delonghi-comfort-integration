@@ -378,15 +378,6 @@ class DeLonghiAPI:
             raise DeLonghiAPIError("Unexpected device-properties response")
         return response
 
-    def get_property_value(
-        self, properties: list[dict], property_name: str
-    ) -> Any | None:
-        """Extract a property value from the properties list by property name."""
-        for prop in properties:
-            if "property" in prop and prop["property"]["name"] == property_name:
-                return prop["property"]["value"]
-        return None
-
     async def set_device_mode(self, dsn: str, mode: int) -> bool:
         """Set device mode (1=Cooling, 2=Dehumidification, 3=Fan)."""
         try:
@@ -409,18 +400,6 @@ class DeLonghiAPI:
             return response is not None
         except Exception as e:
             _LOGGER.error("Failed to set temperature setpoint for %s: %s", dsn, e)
-            return False
-
-    async def set_status(self, dsn: str, status: int) -> bool:
-        """Set device status (1=ON, 2=OFF)."""
-        try:
-            response = await self._post_request(
-                f"apiv1/dsns/{dsn}/properties/set_status/datapoints.json",
-                {"datapoint": {"value": status}},
-            )
-            return response is not None
-        except Exception as e:
-            _LOGGER.error("Failed to set status for %s: %s", dsn, e)
             return False
 
     async def set_silent_mode(self, dsn: str, status: int) -> bool:
