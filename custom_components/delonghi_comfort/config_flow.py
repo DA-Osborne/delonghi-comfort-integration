@@ -137,15 +137,15 @@ class DelonghiComfortConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     @callback
     def async_get_options_flow(config_entry):
         """Get the options flow for this handler."""
-        return DelonghiComfortOptionsFlow(config_entry)
+        return DelonghiComfortOptionsFlow()
 
 
 class DelonghiComfortOptionsFlow(config_entries.OptionsFlow):
-    """Handle options flow for De'Longhi Comfort integration."""
+    """Handle options flow for De'Longhi Comfort integration.
 
-    def __init__(self, config_entry):
-        """Initialize options flow."""
-        self.config_entry = config_entry
+    Home Assistant supplies ``self.config_entry`` itself; assigning it raises an
+    error, which used to make the options page fail to open.
+    """
 
     async def async_step_init(self, user_input=None):
         """Manage the options."""
