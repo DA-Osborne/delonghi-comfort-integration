@@ -169,8 +169,14 @@ logger:
 ### Device diagnostics
 Open the integration's device page and choose **Download diagnostics** for a dump of the machine's information: every property the unit reports, with type, direction and label, and the entities that were created from them. It is a useful utility for adding further machine functionality. Your account details, the device serial number, network address, location and the owner's weather values are removed before the file is written.
 
-### Device API Inspection
-  The repository includes `scripts/inspect_device.py` for local troubleshooting. It prompts for credentials (or reads `DELONGHI_USERNAME`, `DELONGHI_PASSWORD`, `DELONGHI_LANGUAGE` and `DELONGHI_DEVICE_INDEX` from the environment), lists account devices, and writes the selected device's raw property data to `scripts/delonghi_device_dump.json`. Use `--label NAME` to write `scripts/delonghi_device_dump_NAME.json` instead. The dump may contain device identifiers, network details, and property values; review and redact it before sharing. Generated dumps are excluded from Git.
+### Developer tools
+
+The `scripts` folder has tools for looking at what a unit reports. They talk to the De'Longhi cloud with your account, so they need your credentials.
+
+- **`scripts/inspect_device.py`** lists the devices on the account and writes the selected device's raw property data to `scripts/delonghi_device_dump.json`. Use `--label NAME` to write `scripts/delonghi_device_dump_NAME.json` instead. A dump may contain device identifiers, network details and property values, so review and redact it before sharing. Dumps are excluded from Git.
+- **`scripts/compare_dumps.py BEFORE AFTER`** shows which properties differ between two labelled dumps.
+- **`scripts/explorer.py`** serves a page on `127.0.0.1` that shows every property live, logs each change with a time, lets you add a note to a property and label an event, and can write a value to any writable property. **Writes go straight to the device.** The page needs the one-time token printed at start-up. Its notes and logs are saved to `scripts/explorer_session.json`, which Git ignores.
+- **Credentials.** The scripts read `DELONGHI_USERNAME`, `DELONGHI_PASSWORD`, `DELONGHI_LANGUAGE` and `DELONGHI_DEVICE_INDEX` from the environment and ask for anything missing. On Windows, `scripts/save_credentials.ps1` stores them once, encrypted to your Windows account in `%LOCALAPPDATA%` (outside the repository), and `. .\scripts\load_credentials.ps1` loads them into the current PowerShell session.
 
 ## 🤝 Contributing
 

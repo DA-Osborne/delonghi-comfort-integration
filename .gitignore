@@ -177,3 +177,4 @@ pyrightconfig.json
 
 # Local De'Longhi API inspection output contains device/account details.
 scripts/delonghi_device_dump*.json
+scripts/explorer_session.json
