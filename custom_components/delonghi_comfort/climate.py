@@ -101,7 +101,7 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
         # Fan modes - you can adjust these based on your device's capabilities
         self._attr_fan_modes = ["auto", "low", "medium", "high"]
 
-        self._attr_temperature_unit = UnitOfTemperature.CELSIUS
+        self._attr_native_temperature_unit = UnitOfTemperature.CELSIUS
         self._attr_min_temp = 18
         self._attr_max_temp = 32
         self._attr_target_temperature_step = 1
@@ -136,13 +136,13 @@ class DeLonghiClimate(DeLonghiEntity, ClimateEntity):
         return HVACAction.IDLE
 
     @property
-    def current_temperature(self) -> float | None:
-        """Return the current temperature."""
+    def native_current_temperature(self) -> float | None:
+        """Return the current temperature, in the unit the device reports."""
         return self.coordinator.data.get("room_temp")
 
     @property
-    def target_temperature(self) -> float | None:
-        """Return the temperature we try to reach."""
+    def native_target_temperature(self) -> float | None:
+        """Return the temperature we try to reach, in the unit the device reports."""
         return self.coordinator.data.get("temp_setpoint")
 
     @property
@@ -281,7 +281,7 @@ class DeLonghiHeater(DeLonghiEntity, ClimateEntity):
     _attr_min_temp = 10
     _attr_preset_modes = ["Day mode", "Night mode", "Antifrost", "Manual"]
     _attr_target_temperature_step = 0.5
-    _attr_temperature_unit = UnitOfTemperature.CELSIUS
+    _attr_native_temperature_unit = UnitOfTemperature.CELSIUS
 
     def __init__(
         self,
@@ -322,13 +322,13 @@ class DeLonghiHeater(DeLonghiEntity, ClimateEntity):
         return self.preset_modes[device_mode-1] if 1 <= device_mode <= 4 else None
 
     @property
-    def current_temperature(self) -> float | None:
-        """Return the current temperature."""
+    def native_current_temperature(self) -> float | None:
+        """Return the current temperature, in the unit the device reports."""
         return self.coordinator.data.get("room_temp")
 
     @property
-    def target_temperature(self) -> float | None:
-        """Return the temperature we try to reach."""
+    def native_target_temperature(self) -> float | None:
+        """Return the temperature we try to reach, in the unit the device reports."""
         return self.coordinator.data.get("temperature_setpoint")
 
     @property

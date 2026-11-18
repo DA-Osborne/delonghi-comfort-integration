@@ -91,6 +91,19 @@ class ClimateRealFeelTests(IsolatedAsyncioTestCase):
                 entity, _ = self._entity(get_device_mode=device_mode)
                 self.assertEqual(entity.hvac_mode, expected)
 
+    def test_temperatures_use_the_native_names_home_assistant_now_expects(self) -> None:
+        # HA 2026.11 renamed these; the old names warn and stop working in 2027.11.
+        entity, _ = self._entity(room_temp=22.4, temp_setpoint=24)
+        self.assertEqual(entity.native_current_temperature, 22.4)
+        self.assertEqual(entity.native_target_temperature, 24)
+        self.assertEqual(entity.native_temperature_unit, "°C")
+        for old_name in ("_attr_temperature_unit",):
+            self.assertNotIn(old_name, vars(entity))
+        for cls in (self.climate.DeLonghiClimate, self.climate.DeLonghiHeater):
+            with self.subTest(cls=cls.__name__):
+                self.assertNotIn("current_temperature", vars(cls))
+                self.assertNotIn("target_temperature", vars(cls))
+
     def test_off_wins_over_mode(self) -> None:
         entity, _ = self._entity(get_device_status=2, get_device_mode=5)
         self.assertEqual(entity.hvac_mode, self.HVACMode.OFF)
