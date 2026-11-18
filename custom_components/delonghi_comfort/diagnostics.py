@@ -1,9 +1,9 @@
 """Diagnostics for the De'Longhi Comfort integration.
 
 The download lists every property the cloud reports for each device, with its type,
-direction and label, and which entities were created. That is what is needed to add
-support for a model this integration has not seen. Account details and anything that
-identifies the device or the home are removed.
+direction and label, and which entities were created. It is a useful utility for
+adding further machine functionality. Account details and anything that identifies
+the device or the home are removed.
 """
 
 from __future__ import annotations

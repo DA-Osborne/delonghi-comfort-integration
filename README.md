@@ -60,8 +60,8 @@ This integration builds on work from:
 Entities are created only for the properties your model reports, so a model without a given feature does not get an empty entity for it. Entities that repeat the climate entity (target temperature, status, mode, fan speed, silent mode sensors, the power switch and the temperature number) are disabled by default on new installs.
 
 ### Known limits
-- **Weekly schedule is read only.** The unit runs a schedule written outside the app, and the format is understood, but Home Assistant does not write schedules yet. In testing the unit applied a schedule's mode, fan speed and swing, but not its temperature or silent setting. Once the schedule is armed, the unit also switches itself off outside the scheduled times. If you use the app's schedule screen, the app keeps its own copy and overwrites what is on the unit.
-- **Only the properties your model reports are used.** This was developed against one air conditioner (appliance model EL112). Other models may report different properties; entities appear only where the model supplies them. Reports from other models are welcome.
+- **Weekly schedule is read only.** Home Assistant shows the schedule stored on the unit and does not write it. In testing the unit applied a schedule's mode, fan speed and swing, but not its temperature or silent setting. Once the schedule is armed, the unit also switches itself off outside the scheduled times. If you use the app's schedule screen, the app keeps its own copy and overwrites what is on the unit.
+- **Only the properties your model reports are used.** This was developed against one air conditioner (appliance model EL112). Other models may report different properties; entities appear only where the model supplies them.
 - **The heater support is unchanged and untested** against current heaters.
 
 ### Advanced Features
@@ -166,8 +166,8 @@ logger:
     custom_components.delonghi_comfort: debug
 ```
 
-### Reporting a model that is not supported
-Open the integration's device page, choose **Download diagnostics**, and attach the file to an issue. It lists every property your unit reports, with type, direction and label, and the entities that were created from them. Your account details, the device serial number, network address, location and the owner's weather values are removed before the file is written.
+### Device diagnostics
+Open the integration's device page and choose **Download diagnostics** for a dump of the machine's information: every property the unit reports, with type, direction and label, and the entities that were created from them. It is a useful utility for adding further machine functionality. Your account details, the device serial number, network address, location and the owner's weather values are removed before the file is written.
 
 ### Device API Inspection
   The repository includes `scripts/inspect_device.py` for local troubleshooting. It prompts for credentials (or reads `DELONGHI_USERNAME`, `DELONGHI_PASSWORD`, `DELONGHI_LANGUAGE` and `DELONGHI_DEVICE_INDEX` from the environment), lists account devices, and writes the selected device's raw property data to `scripts/delonghi_device_dump.json`. Use `--label NAME` to write `scripts/delonghi_device_dump_NAME.json` instead. The dump may contain device identifiers, network details, and property values; review and redact it before sharing. Generated dumps are excluded from Git.

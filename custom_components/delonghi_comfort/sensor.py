@@ -78,8 +78,9 @@ STATUS_STATES = {1: "on", 2: "off"}
 MODE_STATES = {1: "cooling", 2: "dehumidification", 3: "fan_only", 5: "real_feel"}
 FAN_SPEED_STATES = {1: "low", 2: "medium", 3: "high", 4: "auto"}
 SILENT_STATES = {0: "off", 1: "on"}
-# The comfort light of myEcoReal Feel: blue (4) is the best level. Orange and
-# green have not been captured yet, so every other code reads as "other".
+# The comfort light of myEcoReal Feel: blue (4) is the best level. The orange and
+# green codes are not mapped, so every other code reads as "other" (with the raw
+# code kept in an attribute).
 REAL_FEEL_COMFORT_STATES = {0: "inactive", 4: "perfect"}
 REAL_FEEL_OTHER_STATE = "other"
 

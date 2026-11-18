@@ -25,7 +25,7 @@ This is a large update. **It requires Home Assistant 2026.11 or newer.** Read "W
 - **Pipe temperature** (the evaporator pipe).
 - **Alarm sensors**: tray full, probe failure, low humidity, frost protection and high temperature.
 - **Weekly schedule** sensor: the schedule stored on the unit, decoded into days, times and settings. Read only.
-- **Download diagnostics**: a redacted list of every property a model reports, for reporting unsupported models.
+- **Download diagnostics**: a useful utility to dump the machine's information (every property the unit reports, redacted) for adding further machine functionality.
 - Fan speeds offered now follow the mode: dehumidify offers Auto only, and fan mode offers Low, Medium and High.
 
 ### Fixed
