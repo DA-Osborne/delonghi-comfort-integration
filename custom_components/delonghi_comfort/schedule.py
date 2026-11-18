@@ -1,8 +1,9 @@
 """Decode and encode the weekly schedule stored on the unit.
 
 The cloud holds the schedule in two strings. The format was worked out from
-schedules created in the De'Longhi Comfort app and is documented in
-docs/device-properties.md. In short:
+schedules created in the De'Longhi Comfort app, changing one setting at a time, and
+an encoder written from these rules reproduces every record the app produced. In
+short:
 
 * ``weeklyschedule_calendar`` has one character per quarter hour of the week
   (7 days of 96, Monday first). ``A`` means nothing is scheduled. Any other

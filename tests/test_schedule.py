@@ -29,8 +29,8 @@ def hm(text: str) -> int:
     return int(hours) * 60 + int(minutes)
 
 
-# The 15 records the app produced, from docs/device-properties.md
-# (settings, value). The unit ran schedules built from these.
+# The 15 records the app produced, as (settings, value). They come from schedules
+# entered in the app one setting at a time. The unit ran schedules built from these.
 KNOWN_RECORDS = [
     (Settings("cool", 20, "low", True, True), 0xC84),
     (Settings("real_feel", 20, "low", True, False), 0x887),
