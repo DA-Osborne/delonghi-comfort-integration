@@ -54,6 +54,9 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.device_model = device_info.get("model", "Unknown")
         self.device_version = device_info.get("sw_version")
         self._config_entry = config_entry
+        self.device_record: dict[str, Any] = dict(device_info)
+        # The latest property records exactly as the cloud sent them, for diagnostics.
+        self.property_records: dict[str, dict[str, Any]] = {}
         self.available_properties: frozenset[str] = frozenset()
         self._pending_commands: dict[str, tuple[Any, Any, float]] = {}
         self._confirmation_task: asyncio.Task[None] | None = None
@@ -66,10 +69,13 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
             # Parse properties into a more usable format
             data = {}
+            records = {}
             for prop in properties:
                 if "property" in prop:
                     prop_info = prop["property"]
                     data[prop_info["name"]] = prop_info["value"]
+                    records[prop_info["name"]] = prop_info
+            self.property_records = records
 
             # Records the device reports, regardless of whether they hold a value.
             self.available_properties = frozenset(data)

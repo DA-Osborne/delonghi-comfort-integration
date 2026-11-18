@@ -166,6 +166,9 @@ logger:
     custom_components.delonghi_comfort: debug
 ```
 
+### Reporting a model that is not supported
+Open the integration's device page, choose **Download diagnostics**, and attach the file to an issue. It lists every property your unit reports, with type, direction and label, and the entities that were created from them. Your account details, the device serial number, network address, location and the owner's weather values are removed before the file is written.
+
 ### Device API Inspection
   The repository includes `scripts/inspect_device.py` for local troubleshooting. It prompts for credentials (or reads `DELONGHI_USERNAME`, `DELONGHI_PASSWORD`, `DELONGHI_LANGUAGE` and `DELONGHI_DEVICE_INDEX` from the environment), lists account devices, and writes the selected device's raw property data to `scripts/delonghi_device_dump.json`. Use `--label NAME` to write `scripts/delonghi_device_dump_NAME.json` instead. The dump may contain device identifiers, network details, and property values; review and redact it before sharing. Generated dumps are excluded from Git.
 
