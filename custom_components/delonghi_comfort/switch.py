@@ -8,10 +8,12 @@ from typing import Any
 
 from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription, SwitchDeviceClass
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import DeLonghiConfigEntry
 from .capabilities import async_supported_descriptions
+from .coordinator import silent_mode_available
 from .entity import DeLonghiEntity
 
 _LOGGER = logging.getLogger(__name__)
@@ -132,6 +134,7 @@ class DeLonghiSwitch(DeLonghiEntity, SwitchEntity):
             success = await self.coordinator.api.set_device_status(self.coordinator.dsn, 1)
             optimistic_value = 1
         elif self.entity_description.key == "get_silent_function":
+            self._require_silent_mode_available()
             success = await self.coordinator.api.set_silent_mode(self.coordinator.dsn, 1)
             optimistic_value = 1
 
@@ -148,6 +151,7 @@ class DeLonghiSwitch(DeLonghiEntity, SwitchEntity):
             success = await self.coordinator.api.set_device_status(self.coordinator.dsn, 2)
             optimistic_value = 2
         elif self.entity_description.key == "get_silent_function":
+            self._require_silent_mode_available()
             success = await self.coordinator.api.set_silent_mode(self.coordinator.dsn, 0)
             optimistic_value = 0
 
@@ -158,6 +162,13 @@ class DeLonghiSwitch(DeLonghiEntity, SwitchEntity):
         else:
             _LOGGER.error("Failed to turn off %s", self.entity_description.key)
 
+    def _require_silent_mode_available(self) -> None:
+        """Refuse a silent command the unit would ignore, with a message the user sees."""
+        if not silent_mode_available(self.coordinator.data):
+            raise HomeAssistantError(
+                "Silent mode can only be changed while the unit is on and cooling"
+            )
+
     @property
     def available(self) -> bool:
         """Return if entity is available."""
@@ -165,8 +176,9 @@ class DeLonghiSwitch(DeLonghiEntity, SwitchEntity):
             return (
                 super().available
                 and self.entity_description.key in self.coordinator.data
-                and self.coordinator.data.get("get_device_status") == 1
+                and silent_mode_available(self.coordinator.data)
                 and not self.coordinator.is_property_pending("get_device_status")
+                and not self.coordinator.is_property_pending("get_device_mode")
             )
         return (
             super().available and self.entity_description.key in self.coordinator.data

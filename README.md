@@ -51,6 +51,7 @@ This integration builds on work from:
 ### Controls
 - **Power Switch**: Turn device on/off
 - **Temperature Controls**: Precise temperature adjustment
+- **Silent Mode**: Available only while the unit is on and cooling. The unit ignores it in the other modes and clears it when you leave cooling, so the switch is unavailable there
 - **Mode Selection**: Easy switching between operating modes
 - **Fan Speed Selection**: Control fan speed levels
 - **myEcoReal Feel Adjustment**: The comfort adjustment the app changes when you answer "do you feel comfortable?". Range 14 to 18 with 16 as the default; a higher number is warmer

@@ -24,6 +24,28 @@ _LOGGER = logging.getLogger(__name__)
 _COMMAND_CONFIRMATION_INTERVAL = 10
 _COMMAND_CONFIRMATION_TIMEOUT = 90
 
+# Device mode 1 is cooling.
+COOLING_MODE = 1
+
+
+def silent_mode_available(data: dict[str, Any]) -> bool:
+    """Return whether the unit accepts the silent setting right now.
+
+    It does only while it is on and cooling. In dehumidify, fan and Real Feel mode
+    it ignores the command and does not report it back, and switching to any of
+    those modes clears silent mode.
+    """
+    return data.get("get_device_status") == 1 and data.get("get_device_mode") == COOLING_MODE
+
+
+def command_is_moot(key: str, data: dict[str, Any]) -> bool:
+    """Return whether waiting for the unit to confirm a command is pointless.
+
+    A silent command stops mattering once the unit is no longer cooling: the unit
+    clears silent mode itself, so the commanded value must not be shown any longer.
+    """
+    return key == "get_silent_function" and not silent_mode_available(data)
+
 
 class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Coordinator to manage data updates for De'Longhi devices."""
@@ -84,7 +106,11 @@ class DeLonghiCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             confirmation_changed = False
             for key, (expected, _, expires_at) in list(self._pending_commands.items()):
                 actual = data.get(key)
-                if actual == expected or now >= expires_at:
+                if (
+                    actual == expected
+                    or now >= expires_at
+                    or command_is_moot(key, data)
+                ):
                     self._pending_commands.pop(key, None)
                     confirmation_changed = True
                 else:

@@ -27,6 +27,7 @@ This is a large update. **It requires Home Assistant 2026.11 or newer.** Read "W
 - **Weekly schedule** sensor: the schedule stored on the unit, decoded into days, times and settings. Read only.
 - **Download diagnostics**: a useful utility to dump the machine's information (every property the unit reports, redacted) for adding further machine functionality.
 - Fan speeds offered now follow the mode: dehumidify offers Auto only, and fan mode offers Low, Medium and High.
+- The **Silent mode** switch is available only while the unit is on and cooling, which is the only mode where the unit accepts it. In dehumidify, fan and Real Feel mode the unit ignores the command and switching to those modes clears silent mode, so the switch is unavailable there and a command is refused with a message instead of showing a state the unit never takes.
 
 ### Fixed
 
