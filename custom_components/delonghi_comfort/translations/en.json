@@ -1,7 +1,5 @@
 {
   "config": {
-    "title": "De'Longhi Comfort Integration",
-    "description": "Integration for managing De'Longhi comfort devices.",
     "step": {
       "user": {
         "title": "De'Longhi Comfort",
@@ -40,10 +38,6 @@
         }
       }
     }
-  },
-  "device": {
-    "name": "De'Longhi Device",
-    "description": "Manage your De'Longhi comfort device."
   },
   "entity": {
     "sensor": {

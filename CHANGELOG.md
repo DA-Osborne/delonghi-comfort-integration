@@ -38,6 +38,8 @@ This is a large update. **It requires Home Assistant 2026.11 or newer.** Read "W
 - **Polling** defaults to 60 seconds, with limits of 30 to 300 seconds.
 - **Temperature setpoint number** range corrected to 18 to 32.
 - The device no longer lists itself as its own parent.
+- Heater state icons for `0%` and `Day mode` are removed, because Home Assistant's icon validation rejects those state names. The heater entities use their default icon.
+- The integration manifest and translation files follow Home Assistant's hassfest rules, and the hassfest and HACS checks run on push, pull request and manual start only.
 - The heater path no longer crashes on missing or unexpected values, and its entities are created only for properties the heater reports.
 - Home Assistant 2026.11's climate temperature rename is handled (`native_*` names), so there are no deprecation warnings.
 
