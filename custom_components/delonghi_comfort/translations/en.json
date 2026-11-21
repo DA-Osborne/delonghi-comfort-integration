@@ -116,7 +116,8 @@
         "name": "myEcoReal Feel comfort",
         "state": {
           "inactive": "Inactive",
-          "other": "Not optimal (orange or green)",
+          "near_optimal": "Near optimal (green)",
+          "other": "Other (for example orange)",
           "perfect": "Perfect (blue)"
         }
       }

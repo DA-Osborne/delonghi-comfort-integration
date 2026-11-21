@@ -43,7 +43,7 @@ This integration builds on work from:
 - **Fan Speed**: Current fan speed setting
 - **Pipe Temperature**: Refrigerant pipe (evaporator) temperature, useful for seeing when the compressor is working
 - **Remote Control**: Temperature and humidity measured by the CST remote, plus whether it is connected, docked and being used
-- **myEcoReal Feel Comfort**: The comfort light colour (inactive, perfect, or not optimal)
+- **myEcoReal Feel Comfort**: The comfort light colour (inactive, near optimal (green), perfect (blue), or other)
 - **Alarms**: Tray full, probe failure, low humidity, frost protection and high temperature
 - **Timer**: Whether the app's Off timer is running
 - **Weekly Schedule**: The schedule stored on the unit, decoded into days, times and settings (read only). It shows what the unit will run, which can differ from what the app displays

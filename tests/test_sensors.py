@@ -57,6 +57,7 @@ class SensorTests(TestCase):
     # ---- myEcoReal Feel comfort light ------------------------------------
     def test_comfort_light_known_codes(self) -> None:
         self.assertEqual(self._sensor("real_feel_colour", real_feel_colour=0).native_value, "inactive")
+        self.assertEqual(self._sensor("real_feel_colour", real_feel_colour=3).native_value, "near_optimal")
         self.assertEqual(self._sensor("real_feel_colour", real_feel_colour=4).native_value, "perfect")
 
     def test_comfort_light_unknown_code_is_other_and_keeps_the_raw_value(self) -> None:
